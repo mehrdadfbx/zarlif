@@ -1,321 +1,365 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
+import 'package:fl_chart/fl_chart.dart'; // برای نمودار
 
-class CargoAnalysisChartScreen extends StatelessWidget {
-  const CargoAnalysisChartScreen({super.key});
+class CargoReportScreen extends StatelessWidget {
+  const CargoReportScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isTablet = MediaQuery.of(context).size.width > 600;
-    final maxWidth = isTablet ? 600.0 : double.infinity;
+    // تم شما
+    final Color backgroundColor = const Color(0xFF1E1E1E);
+    final Color cardColor = const Color(0xFF2D2D2D);
+    final Color primaryBlue = const Color(0xFF4A90E2);
+    final Color accentGreen = const Color(0xFF50C878);
+    final Color textColor = Colors.white;
+    final Color hintColor = const Color(0xFFB0B0B0);
+    final Color borderColor = const Color(0xFF444444);
 
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70),
-        child: SafeArea(
-          child: Container(
-            margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
-            decoration: BoxDecoration(
-              color: Colors.blue[700],
-              borderRadius: BorderRadius.circular(40),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              centerTitle: true,
-              title: const Text(
-                'گزارش واحد آزمایشگاه',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontFamily: 'Vazir',
-                ),
-              ),
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(20)),
-              ),
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
-              actions: const [
-                Padding(
-                  padding: EdgeInsets.only(right: 12),
-                  child: CircleAvatar(
-                    radius: 18,
-                    backgroundColor: Colors.white,
-                    child: ClipOval(
-                      child: Icon(Icons.science, color: Colors.blue, size: 20),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      body: Directionality(
-        textDirection: TextDirection.rtl, // مهم: برای پشتیبانی از فارسی
-        child: Center(
-          child: Container(
-            width: maxWidth,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                _buildHeaderCard(),
-                const SizedBox(height: 20),
-                Expanded(child: _buildBarChart()),
-                const SizedBox(height: 16),
-                _buildLegendTable(),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeaderCard() {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: const Padding(
-        padding: EdgeInsets.all(16),
-        child: Row(
+      backgroundColor: backgroundColor,
+      appBar: _buildAppBar(),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
           children: [
-            Icon(Icons.bar_chart, color: Colors.blue, size: 20),
-            SizedBox(width: 8),
-            Text(
-              'نمودار مقایسه‌ای',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                fontFamily: 'Vazir',
-              ),
+            // کارت نمودار
+            _buildChartCard(
+              primaryBlue,
+              accentGreen,
+              cardColor,
+              textColor,
+              hintColor,
             ),
-            Spacer(),
-            Text(
-              'واحد آزمایشگاه',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-                fontFamily: 'Vazir',
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+            const SizedBox(height: 16),
+            // کارت جدول
+            _buildTableCard(cardColor, textColor, hintColor, borderColor),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBarChart() {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: BarChart(
-          BarChartData(
-            alignment: BarChartAlignment.spaceAround,
-            maxY: 15, // افزایش یافته تا همه داده‌ها جا بشن
-            barTouchData: BarTouchData(
-              enabled: true,
-              touchTooltipData: BarTouchTooltipData(
-                // tooltipBgColor: Colors.blue[800],
-                getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                  final companyNames = ['پرک پلاست', 'تولید بار', 'شرکت پلاست'];
-                  final labels = ['پلیمر', 'رطوبت', 'PVC'];
-                  final values = [
-                    [8.3, 3.5, 12.5], // پرک پلاست
-                    [0.5, 1.5, 0.0], // تولید بار
-                    [0.3, 1.2, 0.0], // شرکت پلاست
-                  ];
-
-                  final value = values[group.x][rodIndex];
-                  return BarTooltipItem(
-                    '${companyNames[group.x]}\n${labels[rodIndex]}: $value%',
-                    const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Vazir',
-                      fontSize: 12,
-                    ),
-                  );
-                },
-              ),
+  PreferredSizeWidget _buildAppBar() => PreferredSize(
+    preferredSize: const Size.fromHeight(70),
+    child: SafeArea(
+      child: Container(
+        margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2D2D2D),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            titlesData: FlTitlesData(
-              show: true,
-              rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
-              topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  reservedSize: 50,
-                  getTitlesWidget: (value, meta) {
-                    const titles = ['پرک پلاست', 'تولید بار', 'شرکت پلاست'];
-                    if (value.toInt() >= 0 && value.toInt() < titles.length) {
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          titles[value.toInt()],
-                          style: const TextStyle(
-                            fontFamily: 'Vazir',
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      );
-                    }
-                    return const SizedBox();
-                  },
-                ),
-              ),
-              leftTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  interval: 5,
-                  reservedSize: 30,
-                  getTitlesWidget: (value, meta) {
-                    return Text(
-                      '${value.toInt()}%',
-                      style: const TextStyle(
-                        fontFamily: 'Vazir',
-                        fontSize: 11,
-                        color: Colors.grey,
-                      ),
-                    );
-                  },
-                ),
-              ),
+          ],
+        ),
+        child: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          title: const Text(
+            'گزارش واحد آزمایشگاه',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 18,
+              fontFamily: 'Vazir',
             ),
-            gridData: FlGridData(
-              show: true,
-              drawVerticalLine: false,
-              horizontalInterval: 5,
-              getDrawingHorizontalLine: (value) =>
-                  FlLine(color: Colors.grey[300]!, strokeWidth: 1),
-            ),
-            borderData: FlBorderData(show: false),
-            barGroups: [
-              _makeGroupData(
-                0,
-                [8.3, 3.5, 12.5],
-                [Colors.grey, Colors.green, Colors.blue],
-              ),
-              _makeGroupData(
-                1,
-                [0.5, 1.5, 0.0],
-                [Colors.grey, Colors.green, Colors.blue],
-              ),
-              _makeGroupData(
-                2,
-                [0.3, 1.2, 0.0],
-                [Colors.grey, Colors.green, Colors.blue],
-              ),
-            ],
           ),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+          ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.white,
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/image/Logo.jpg',
+                    width: 32,
+                    height: 32,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
 
-  BarChartGroupData _makeGroupData(
-    int x,
-    List<double> values,
-    List<Color> colors,
+  Widget _buildChartCard(
+    Color blue,
+    Color green,
+    Color card,
+    Color text,
+    Color hint,
   ) {
-    return BarChartGroupData(
-      x: x,
-      barRods: values.asMap().entries.map((e) {
-        final index = e.key;
-        final value = e.value;
-        return BarChartRodData(
-          toY: value,
-          color: colors[index],
-          width: 16,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-          backDrawRodData: BackgroundBarChartRodData(
-            show: true,
-            toY: 15,
-            color: Colors.grey[200],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildLegendTable() {
     return Card(
-      elevation: 3,
+      color: card,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'وزن (کیلوگرم) و درصد (%)',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                fontFamily: 'Vazir',
+            Row(
+              children: [
+                Icon(Icons.bar_chart, color: blue, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'نمودار مقایسه‌ای',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: text,
+                    fontFamily: 'Vazir',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 200,
+              child: BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceAround,
+                  barTouchData: BarTouchData(
+                    enabled: true,
+                    touchTooltipData: BarTouchTooltipData(
+                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                        final values = ['فیک پلاست', 'تولید باز', 'شرکت پلاست'];
+                        final pvc = [12.5, 3.5, 85.3];
+                        return BarTooltipItem(
+                          '${values[groupIndex]}\nPVC: ${pvc[groupIndex]}%',
+                          TextStyle(color: Colors.white, fontFamily: 'Vazir'),
+                        );
+                      },
+                    ),
+                  ),
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 30,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            value.toInt().toString(),
+                            style: TextStyle(
+                              color: hint,
+                              fontSize: 12,
+                              fontFamily: 'Vazir',
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          final labels = [
+                            'فیک پلاست',
+                            'تولید باز',
+                            'شرکت پلاست',
+                          ];
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              labels[value.toInt()],
+                              style: TextStyle(
+                                color: hint,
+                                fontSize: 11,
+                                fontFamily: 'Vazir',
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  gridData: FlGridData(
+                    show: true,
+                    drawHorizontalLine: true,
+                    horizontalInterval: 2,
+                    getDrawingHorizontalLine: (value) =>
+                        FlLine(color: Colors.grey[700]!, strokeWidth: 0.5),
+                  ),
+                  barGroups: [
+                    _makeBarGroup(0, 1.2, green, card),
+                    _makeBarGroup(1, 1.8, green, card),
+                    _makeBarGroup(2, 7.8, blue, card),
+                    _makeBarGroup(3, 7.5, blue, card),
+                    _makeBarGroup(4, 7.2, blue, card),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 12),
-
-            // سرستون جدول
-            _buildTableHeader(),
-
-            const Divider(height: 20, thickness: 1),
-
-            // ردیف‌ها
-            _buildTableRow('پرک پلاست', '۱۴۰۴/۴/۴', '۸۲', '۸.۳', '۳.۵', '۱۲.۵'),
-            _buildTableRow('تولید بار', '۱۴۰۴/۴/۴', '۱۸', '۰.۵', '۱.۵', '۰.۰'),
-            _buildTableRow('شرکت پلاست', '۱۴۰۴/۴/۴', '۹۱', '۰.۳', '۱.۲', '۰.۰'),
+            Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: card,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: hint),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _legendItem('طبقه', blue),
+                    const SizedBox(width: 16),
+                    _legendItem('PVC', green),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTableHeader() {
-    return Row(
-      children: [
-        Expanded(flex: 3, child: _headerText('نام شرکت')),
-        Expanded(flex: 2, child: _headerText('تاریخ')),
-        Expanded(child: _headerText('وزن')),
-        Expanded(child: _headerText('پلیمر %')),
-        Expanded(child: _headerText('رطوبت %')),
-        Expanded(child: _headerText('PVC %')),
+  BarChartGroupData _makeBarGroup(int x, double y, Color color, Color bg) {
+    return BarChartGroupData(
+      x: x,
+      barRods: [
+        BarChartRodData(
+          toY: y,
+          color: color,
+          width: 16,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+          backDrawRodData: BackgroundBarChartRodData(
+            show: true,
+            toY: 8,
+            color: bg,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _headerText(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontFamily: 'Vazir',
-        fontSize: 11,
-        fontWeight: FontWeight.bold,
-        color: Colors.blue,
+  Widget _legendItem(String label, Color color) {
+    return Row(
+      children: [
+        Container(width: 12, height: 12, color: color),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontFamily: 'Vazir',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTableCard(Color card, Color text, Color hint, Color border) {
+    return Card(
+      color: card,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.table_chart,
+                  color: const Color(0xFF4A90E2),
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'وزن (کیلوگرم) و PVC (%)',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: text,
+                    fontFamily: 'Vazir',
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'فستنده',
+                  style: TextStyle(
+                    color: hint,
+                    fontSize: 12,
+                    fontFamily: 'Vazir',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildTableRow(
+              'فیک پلاست',
+              '۱۴۰۴/۸/۲',
+              '۸۲',
+              '۱۰۰۰',
+              '۱۲.۵',
+              'A',
+              border,
+              text,
+              hint,
+            ),
+            _buildTableRow(
+              'تولید باز',
+              '۱۴۰۴/۸/۲',
+              '۱۰۸',
+              '۴۳۰',
+              '۳.۵',
+              'A',
+              border,
+              text,
+              hint,
+            ),
+            _buildTableRow(
+              'شرکت پلاست',
+              '۱۴۰۴/۸/۲',
+              '۹۱',
+              '۱۸۰۰',
+              '۸۵.۳',
+              'A',
+              border,
+              text,
+              hint,
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'میانگین رطوبت: ۳.۳%',
+                style: TextStyle(
+                  color: hint,
+                  fontSize: 12,
+                  fontFamily: 'Vazir',
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-      textAlign: TextAlign.center,
     );
   }
 
@@ -323,57 +367,68 @@ class CargoAnalysisChartScreen extends StatelessWidget {
     String name,
     String date,
     String weight,
-    String poly,
-    String moisture,
+    String qty,
     String pvc,
+    String change,
+    Color border,
+    Color text,
+    Color hint,
   ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: border, width: 0.5)),
+      ),
       child: Row(
         children: [
           Expanded(
             flex: 3,
             child: Text(
               name,
-              style: const TextStyle(fontFamily: 'Vazir', fontSize: 12),
+              style: TextStyle(color: text, fontFamily: 'Vazir', fontSize: 13),
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
               date,
-              style: const TextStyle(
-                fontFamily: 'Vazir',
-                fontSize: 11,
-                color: Colors.grey,
-              ),
+              style: TextStyle(color: hint, fontSize: 12, fontFamily: 'Vazir'),
+              textAlign: TextAlign.center,
             ),
           ),
           Expanded(
+            flex: 1,
             child: Text(
               weight,
-              style: const TextStyle(fontFamily: 'Vazir', fontSize: 12),
+              style: TextStyle(color: text, fontFamily: 'Vazir'),
               textAlign: TextAlign.center,
             ),
           ),
           Expanded(
+            flex: 1,
             child: Text(
-              poly,
-              style: const TextStyle(fontFamily: 'Vazir', fontSize: 12),
+              qty,
+              style: TextStyle(color: text, fontFamily: 'Vazir'),
               textAlign: TextAlign.center,
             ),
           ),
           Expanded(
+            flex: 1,
             child: Text(
-              moisture,
-              style: const TextStyle(fontFamily: 'Vazir', fontSize: 12),
+              '$pvc%',
+              style: TextStyle(
+                color: const Color(0xFF50C878),
+                fontFamily: 'Vazir',
+              ),
               textAlign: TextAlign.center,
             ),
           ),
           Expanded(
+            flex: 1,
             child: Text(
-              pvc,
-              style: const TextStyle(fontFamily: 'Vazir', fontSize: 12),
+              change,
+              style: TextStyle(color: text, fontFamily: 'Vazir'),
               textAlign: TextAlign.center,
             ),
           ),
