@@ -10,22 +10,16 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // AppBar معمولی + فاصله از بالا + گوشه گرد
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70), // ارتفاع دلخواه
+        preferredSize: const Size.fromHeight(70),
         child: SafeArea(
           child: Container(
-            margin: const EdgeInsets.only(
-              top: 16,
-              left: 16,
-              right: 16,
-            ), // فاصله از بالا و طرفین
+            margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
             decoration: BoxDecoration(
               color: Colors.blue[700],
-              borderRadius: BorderRadius.circular(40), // گوشه‌های گرد
+              borderRadius: BorderRadius.circular(40),
               boxShadow: [
                 BoxShadow(
-                  // ignore: deprecated_member_use
                   color: Colors.black.withOpacity(0.2),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
@@ -63,73 +57,52 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ],
-              // حذف سایه پیش‌فرض AppBar
               shadowColor: Colors.transparent,
             ),
           ),
         ),
       ),
 
-      // بدنه اصلی با اسکرول
+      // بدنه اصلی
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildUserInfoSection(context),
-            const SizedBox(height: 20),
-            Expanded(child: _buildMenuGrid(context)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // بقیه متدها بدون تغییر
-  Widget _buildUserInfoSection(BuildContext context) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'نام واردکننده اطلاعات',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              decoration: InputDecoration(
-                hintText: 'نام خود را وارد کنید',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+            // ✅ کارت جدید زیر AppBar
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SenderManagementScreen(),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 20,
+                ),
+                child: Row(
+                  children: const [
+                    Icon(Icons.person, color: Colors.blue, size: 28),
+                    SizedBox(width: 10),
+                    Text(
+                      'واردکننده اطلاعات: ',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                    Text(
+                      'شرافتی',
+                      style: TextStyle(fontSize: 16, color: Colors.black87),
+                    ),
+                  ],
                 ),
-                child: const Text('تأیید و ادامه'),
               ),
             ),
+
+            const SizedBox(height: 16),
+
+            // ✅ گرید منوها
+            Expanded(child: _buildMenuGrid(context)),
           ],
         ),
       ),

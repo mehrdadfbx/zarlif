@@ -26,16 +26,24 @@ class Sender {
 
   /// ساخت شیء از پاسخ API
   factory Sender.fromMap(Map<String, dynamic> map) {
+    int? parseId(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
+
     return Sender(
-      id: map['id'] is int ? map['id'] : int.tryParse(map['id'].toString()),
-      addedDate: DateTime.parse(
-        map['added_date'] ??
-            map['addedDate'] ??
-            DateTime.now().toIso8601String(),
-      ),
-      senderName: (map['name'] ?? map['senderName'] ?? '').toString(),
-      phoneNumber: (map['phone'] ?? map['phoneNumber'] ?? '').toString(),
-      address: (map['address'] ?? '').toString(),
+      id: parseId(map['id']),
+      addedDate: DateTime.tryParse(
+            map['added_date']?.toString() ??
+                map['addedDate']?.toString() ??
+                DateTime.now().toIso8601String(),
+          ) ??
+          DateTime.now(),
+      senderName: (map['name'] ?? map['senderName'] ?? '').toString().trim(),
+      phoneNumber: (map['phone'] ?? map['phoneNumber'] ?? '').toString().trim(),
+      address: (map['address'] ?? '').toString().trim(),
     );
   }
 

@@ -37,21 +37,16 @@ class _LaboratoryReportScreenState extends State<LaboratoryReportScreen> {
       return data.map((item) {
         final model = LabAverageModel.fromJson(item);
 
-        // تبدیل رشته به عدد
         final double pvc = double.tryParse(model.avgPvc.toString()) ?? 0.0;
         final double waste = double.tryParse(model.avgWaste.toString()) ?? 0.0;
         final double colored =
             double.tryParse(model.avgColoredFlake.toString()) ?? 0.0;
 
-        // مجموع مقادیر برای هر فرد
         final double total = pvc + waste + colored;
-
-        // محاسبه درصد (جلوگیری از تقسیم بر صفر)
         final double pvcPercent = total > 0 ? (pvc / total) * 100 : 0.0;
         final double wastePercent = total > 0 ? (waste / total) * 100 : 0.0;
         final double coloredPercent = total > 0 ? (colored / total) * 100 : 0.0;
 
-        // گرد کردن به دو رقم اعشار
         return LabAverageModel(
           senderName: model.senderName,
           avgPvc: double.parse(pvcPercent.toStringAsFixed(2)),
@@ -69,20 +64,15 @@ class _LaboratoryReportScreenState extends State<LaboratoryReportScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70), // ارتفاع دلخواه
+        preferredSize: const Size.fromHeight(70),
         child: SafeArea(
           child: Container(
-            margin: const EdgeInsets.only(
-              top: 16,
-              left: 16,
-              right: 16,
-            ), // فاصله از بالا و طرفین
+            margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
             decoration: BoxDecoration(
               color: Colors.blue[700],
-              borderRadius: BorderRadius.circular(40), // گوشه‌های گرد
+              borderRadius: BorderRadius.circular(40),
               boxShadow: [
                 BoxShadow(
-                  // ignore: deprecated_member_use
                   color: Colors.black.withOpacity(0.2),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
@@ -120,7 +110,6 @@ class _LaboratoryReportScreenState extends State<LaboratoryReportScreen> {
                   ),
                 ),
               ],
-              // حذف سایه پیش‌فرض AppBar
               shadowColor: Colors.transparent,
             ),
           ),
@@ -185,7 +174,6 @@ class _LaboratoryReportScreenState extends State<LaboratoryReportScreen> {
                               enabled: true,
                               handleBuiltInTouches: true,
                               touchTooltipData: BarTouchTooltipData(
-                                // tooltipBgColor: Colors.blueAccent.withOpacity(0.9),
                                 tooltipBorderRadius: BorderRadius.circular(8),
                                 tooltipPadding: const EdgeInsets.all(8),
                                 tooltipMargin: 8,
@@ -210,7 +198,6 @@ class _LaboratoryReportScreenState extends State<LaboratoryReportScreen> {
                               ),
                             ),
                             titlesData: FlTitlesData(
-                              // محور Y: فقط اعداد بدون درصد
                               leftTitles: AxisTitles(
                                 sideTitles: SideTitles(
                                   showTitles: true,
@@ -218,7 +205,7 @@ class _LaboratoryReportScreenState extends State<LaboratoryReportScreen> {
                                   reservedSize: 30,
                                   getTitlesWidget: (value, meta) {
                                     return Text(
-                                      value.toInt().toString(), // فقط عدد
+                                      value.toInt().toString(),
                                       style: const TextStyle(
                                         fontFamily: "Vazir",
                                         fontSize: 11,
@@ -270,7 +257,6 @@ class _LaboratoryReportScreenState extends State<LaboratoryReportScreen> {
                                 x: i,
                                 barsSpace: 8,
                                 barRods: [
-                                  // PVC — بدون نمایش عدد روی میله
                                   BarChartRodData(
                                     toY: d.avgPvc,
                                     color: Colors.blueAccent,
@@ -280,9 +266,7 @@ class _LaboratoryReportScreenState extends State<LaboratoryReportScreen> {
                                       color: Colors.white,
                                       width: 1,
                                     ),
-                                    // هیچ backDrawRodData یا stack اضافه نکنید
                                   ),
-                                  // مواد زائد
                                   BarChartRodData(
                                     toY: d.avgWaste,
                                     color: Colors.grey,
@@ -293,7 +277,6 @@ class _LaboratoryReportScreenState extends State<LaboratoryReportScreen> {
                                       width: 1,
                                     ),
                                   ),
-                                  // پرک رنگی
                                   BarChartRodData(
                                     toY: d.avgColoredFlake,
                                     color: Colors.green,
@@ -305,7 +288,6 @@ class _LaboratoryReportScreenState extends State<LaboratoryReportScreen> {
                                     ),
                                   ),
                                 ],
-                                // showingTooltipIndicators: [0, 1, 2],
                               );
                             }),
                           ),
@@ -330,7 +312,7 @@ class _LaboratoryReportScreenState extends State<LaboratoryReportScreen> {
             ),
             const SizedBox(height: 30),
 
-            /// ==================== جدول بارها ====================
+            /// ==================== جدول بارها (با گوشه‌های گرد) ====================
             FutureBuilder<List<CargoModel>>(
               future: _futureCargos,
               builder: (context, snapshot) {
@@ -346,50 +328,66 @@ class _LaboratoryReportScreenState extends State<LaboratoryReportScreen> {
 
                 final cargos = snapshot.data!;
 
-                return SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    headingRowColor: MaterialStateColor.resolveWith(
-                      (states) => Colors.blue[700]!,
-                    ),
-                    headingTextStyle: const TextStyle(
-                      fontFamily: "Vazir",
-                      fontWeight: FontWeight.bold,
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    decoration: BoxDecoration(
                       color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 6,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
                     ),
-                    dataTextStyle: const TextStyle(
-                      fontFamily: "Vazir",
-                      fontSize: 13,
-                    ),
-                    dataRowHeight: 48,
-                    columns: const [
-                      DataColumn(label: Text('فرستنده')),
-                      DataColumn(label: Text('وزن (kg)')),
-                      DataColumn(label: Text('رطوبت (%)')),
-                      DataColumn(label: Text('قیمت (ریال)')),
-                      DataColumn(label: Text('PVC')),
-                      DataColumn(label: Text('پرک کثیف')),
-                      DataColumn(label: Text('پلیمر')),
-                      DataColumn(label: Text('مواد زائد')),
-                      DataColumn(label: Text('پرک رنگی')),
-                      DataColumn(label: Text('رنگ')),
-                    ],
-                    rows: cargos.map((cargo) {
-                      return DataRow(
-                        cells: [
-                          DataCell(Text(cargo.userName)),
-                          DataCell(Text(cargo.weightScale.toString())),
-                          DataCell(Text("${cargo.humidity}%")),
-                          DataCell(Text(cargo.pricePerUnit.toString())),
-                          DataCell(Text("${cargo.pvc} ppm")),
-                          DataCell(Text("${cargo.dirtyFlake} ppm")),
-                          DataCell(Text("${cargo.polymer} ppm")),
-                          DataCell(Text("${cargo.wasteMaterial} ppm")),
-                          DataCell(Text("${cargo.coloredFlake} ppm")),
-                          DataCell(Text(cargo.colorChange)),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: DataTable(
+                        headingRowColor: MaterialStateColor.resolveWith(
+                          (states) => Colors.blue[700]!,
+                        ),
+                        headingTextStyle: const TextStyle(
+                          fontFamily: "Vazir",
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        dataTextStyle: const TextStyle(
+                          fontFamily: "Vazir",
+                          fontSize: 13,
+                        ),
+                        dataRowHeight: 48,
+                        columns: const [
+                          DataColumn(label: Text('فرستنده')),
+                          DataColumn(label: Text('وزن (kg)')),
+                          DataColumn(label: Text('رطوبت (%)')),
+                          DataColumn(label: Text('قیمت (ریال)')),
+                          DataColumn(label: Text('PVC')),
+                          DataColumn(label: Text('پرک کثیف')),
+                          DataColumn(label: Text('پلیمر')),
+                          DataColumn(label: Text('مواد زائد')),
+                          DataColumn(label: Text('پرک رنگی')),
+                          DataColumn(label: Text('رنگ')),
                         ],
-                      );
-                    }).toList(),
+                        rows: cargos.map((cargo) {
+                          return DataRow(
+                            cells: [
+                              DataCell(Text(cargo.userName)),
+                              DataCell(Text(cargo.weightScale.toString())),
+                              DataCell(Text("${cargo.humidity}%")),
+                              DataCell(Text(cargo.pricePerUnit.toString())),
+                              DataCell(Text("${cargo.pvc} ppm")),
+                              DataCell(Text("${cargo.dirtyFlake} ppm")),
+                              DataCell(Text("${cargo.polymer} ppm")),
+                              DataCell(Text("${cargo.wasteMaterial} ppm")),
+                              DataCell(Text("${cargo.coloredFlake} ppm")),
+                              DataCell(Text(cargo.colorChange)),
+                            ],
+                          );
+                        }).toList(),
+                      ),
+                    ),
                   ),
                 );
               },

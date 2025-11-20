@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
+import 'package:zarlif/screens/phone_login_screen.dart' show PhoneLoginScreen;
+// ignore: unused_import
 import 'screens/home_screen.dart';
 
 void main() {
@@ -96,7 +98,7 @@ class _SplashScreenState extends State<SplashScreen>
           context,
           PageRouteBuilder(
             transitionDuration: const Duration(milliseconds: 600),
-            pageBuilder: (_, __, ___) => const HomeScreen(),
+            pageBuilder: (_, __, ___) => PhoneLoginScreen(),
             transitionsBuilder: (_, animation, __, child) {
               return FadeTransition(opacity: animation, child: child);
             },

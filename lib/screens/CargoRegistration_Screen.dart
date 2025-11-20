@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
@@ -5,7 +7,6 @@ import '../models/sender_model.dart';
 import '../Api/cargoapi.dart';
 import '../Api/sender_api.dart';
 import '../models/cargomodel.dart';
-import 'sender_screen.dart';
 
 class CargoRegistrationScreen extends StatefulWidget {
   const CargoRegistrationScreen({super.key});
@@ -37,7 +38,6 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
   Sender? _selectedSender;
   bool _isLoadingSenders = true;
 
-  // متغیر برای نمایش مجموع ppm
   double _totalPpm = 0.0;
 
   @override
@@ -46,8 +46,6 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
     _selectedJalaliDate = Jalali.now();
     _displayDate = _formatJalali(_selectedJalaliDate!);
     _loadSenders();
-
-    // افزودن listener برای فرمت کردن اعداد و محاسبه مجموع ppm
     _setupNumberFormatting();
     _setupPpmListeners();
   }
@@ -76,7 +74,6 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
       _wasteController,
       _coloredFlakeController,
     ];
-
     for (var controller in ppmControllers) {
       controller.addListener(_calculateTotalPpm);
     }
@@ -97,32 +94,24 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
       total += value;
     }
 
-    setState(() {
-      _totalPpm = total;
-    });
+    setState(() => _totalPpm = total);
   }
 
   String _formatNumber(int number) {
-    final String numberStr = number.toString();
-    final int length = numberStr.length;
-    if (length <= 3) return numberStr;
-
-    final List<String> parts = [];
-    for (int i = length; i > 0; i -= 3) {
-      final start = i - 3 < 0 ? 0 : i - 3;
-      parts.add(numberStr.substring(start, i));
+    final str = number.toString();
+    final buffer = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      buffer.write(str[str.length - 1 - i]);
+      if ((i + 1) % 3 == 0 && i + 1 != str.length) buffer.write(',');
     }
-
-    return parts.reversed.join(',');
+    return buffer.toString().split('').reversed.join('');
   }
 
-  int _parseFormattedNumber(String formatted) {
-    return int.tryParse(formatted.replaceAll(',', '')) ?? 0;
-  }
+  int _parseFormattedNumber(String formatted) =>
+      int.tryParse(formatted.replaceAll(',', '')) ?? 0;
 
-  double _parseFormattedDouble(String formatted) {
-    return double.tryParse(formatted.replaceAll(',', '')) ?? 0.0;
-  }
+  double _parseFormattedDouble(String formatted) =>
+      double.tryParse(formatted.replaceAll(',', '')) ?? 0.0;
 
   String _formatJalali(Jalali date) =>
       '${date.year}/${_twoDigits(date.month)}/${_twoDigits(date.day)}';
@@ -140,25 +129,25 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
         }
       });
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطا: $e'), backgroundColor: Colors.red),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('خطا در بارگذاری فرستندگان: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
-      if (mounted) setState(() => _isLoadingSenders = false);
+      setState(() => _isLoadingSenders = false);
     }
   }
 
   Future<void> _selectJalaliDate(BuildContext context) async {
-    final Jalali? picked = await showPersianDatePicker(
+    final picked = await showPersianDatePicker(
       context: context,
       initialDate: _selectedJalaliDate ?? Jalali.now(),
       firstDate: Jalali(1395, 1, 1),
       lastDate: Jalali(1410, 12, 29),
     );
-
-    if (picked != null && picked != _selectedJalaliDate) {
+    if (picked != null) {
       setState(() {
         _selectedJalaliDate = picked;
         _displayDate = _formatJalali(picked);
@@ -186,167 +175,154 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isTablet = constraints.maxWidth > 600;
-        final maxWidth = isTablet ? 600.0 : double.infinity;
-
-        return Scaffold(
-          appBar: _buildAppBar(),
-          body: Center(
-            child: Container(
-              width: maxWidth,
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                autovalidateMode:
-                    AutovalidateMode.onUserInteraction, // اعتبارسنجی در لحظه
-                child: Column(
-                  children: [
-                    _buildHeaderSection(),
-                    const SizedBox(height: 20),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children:
-                              [
-                                    _buildDateField(),
-                                    _buildSenderDropdown(),
-                                    _buildNumberField(
-                                      'وزن (kg)',
-                                      _weightController,
-                                      TextInputType.numberWithOptions(
-                                        decimal: true,
-                                      ),
-                                      isDecimal: true,
-                                    ),
-                                    _buildPercentField(
-                                      'رطوبت (%)',
-                                      _moistureController,
-                                    ),
-                                    _buildNumberField(
-                                      'قیمت (ریال)',
-                                      _priceController,
-                                      TextInputType.number,
-                                      formatNumber: true,
-                                    ),
-                                    _buildPpmField('PVC (ppm)', _pvcController),
-                                    _buildPpmField(
-                                      'پرک کثیف (ppm)',
-                                      _dirtyFlakeController,
-                                    ),
-                                    _buildPpmField(
-                                      'پلیمر (ppm)',
-                                      _polymerController,
-                                    ),
-                                    _buildPpmField(
-                                      'مواد زائد (ppm)',
-                                      _wasteController,
-                                    ),
-                                    _buildPpmField(
-                                      'پرک رنگی (ppm)',
-                                      _coloredFlakeController,
-                                    ),
-                                    // نمایش مجموع ppm
-                                    _buildTotalPpmIndicator(),
-                                    _buildColorChangeDropdown(),
-                                    _buildField(
-                                      'وارد کننده اطلاعات',
-                                      _enteredByController,
-                                      TextInputType.text,
-                                    ),
-                                  ]
-                                  .map(
-                                    (e) => Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 12,
-                                      ),
-                                      child: e,
-                                    ),
-                                  )
-                                  .toList(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildActionButtons(),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // ویجت برای نمایش مجموع ppm
-  Widget _buildTotalPpmIndicator() {
-    Color color;
-    IconData icon;
-    String status;
-
-    if (_totalPpm == 0) {
-      color = Colors.grey;
-      icon = Icons.info_outline;
-      status = 'مقادیر وارد نشده‌اند';
-    } else if (_totalPpm > 1000000) {
-      color = Colors.red;
-      icon = Icons.error_outline;
-      status = 'مجموع بیش از ۱,۰۰۰,۰۰۰ ppm است';
-    } else if (_totalPpm >= 900000 && _totalPpm <= 1000000) {
-      color = Colors.green;
-      icon = Icons.check_circle_outline;
-      status = 'مقادیر در محدوده قابل قبول';
-    } else {
-      color = Colors.orange;
-      icon = Icons.warning_amber_outlined;
-      status = 'مجموع کمتر از حد انتظار است';
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'مجموع: ${_formatNumber(_totalPpm.toInt())} ppm',
-                  style: TextStyle(
-                    fontFamily: 'Vazir',
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-                Text(
-                  status,
-                  style: TextStyle(
-                    fontFamily: 'Vazir',
-                    fontSize: 12,
-                    color: color,
-                  ),
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(70),
+        child: SafeArea(
+          child: Container(
+            margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
+            decoration: BoxDecoration(
+              color: Colors.blue[700],
+              borderRadius: BorderRadius.circular(40),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
+            child: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              centerTitle: true,
+              title: const Text(
+                'اطلاعات بار دریافتی',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Colors.white,
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/image/Logo.jpg',
+                        width: 32,
+                        height: 32,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              shadowColor: Colors.transparent,
+            ),
           ),
-        ],
+        ),
       ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              _buildTopFields(),
+              const SizedBox(height: 16),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children:
+                        [
+                              _buildPercentField(
+                                'رطوبت (%)',
+                                _moistureController,
+                              ),
+                              _buildPpmField('PVC (ppm)', _pvcController),
+                              _buildPpmField(
+                                'پرک کثیف (ppm)',
+                                _dirtyFlakeController,
+                              ),
+                              _buildPpmField('پلیمر (ppm)', _polymerController),
+                              _buildPpmField(
+                                'مواد زائد (ppm)',
+                                _wasteController,
+                              ),
+                              _buildPpmField(
+                                'پرک رنگی (ppm)',
+                                _coloredFlakeController,
+                              ),
+                              _buildTotalPpmIndicator(),
+                              _buildColorChangeDropdown(),
+                              _buildField(
+                                'واردکننده اطلاعات',
+                                _enteredByController,
+                              ),
+                            ]
+                            .map(
+                              (e) => Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: e,
+                              ),
+                            )
+                            .toList(),
+                  ),
+                ),
+              ),
+              _buildActionButtons(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopFields() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: _buildDateField()),
+            const SizedBox(width: 12),
+            Expanded(child: _buildSenderDropdown()),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildNumberField(
+                'وزن (kg)',
+                _weightController,
+                TextInputType.numberWithOptions(decimal: true),
+                isDecimal: true,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildNumberField(
+                'قیمت (ریال)',
+                _priceController,
+                TextInputType.number,
+                formatNumber: true,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
   Widget _buildDateField() {
     return InkWell(
       onTap: () => _selectJalaliDate(context),
-      borderRadius: BorderRadius.circular(12),
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: 'تاریخ',
@@ -370,194 +346,72 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
       keyboardType: type,
       inputFormatters: formatNumber
           ? [FilteringTextInputFormatter.digitsOnly]
-          : isDecimal
-          ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))]
-          : [FilteringTextInputFormatter.digitsOnly],
+          : [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 16,
-        ),
         suffixText: formatNumber ? 'ریال' : null,
       ),
-      style: const TextStyle(fontFamily: 'Vazir'),
-      onChanged: (value) {
-        if (_formKey.currentState != null) {
-          _formKey.currentState!.validate();
-        }
-      },
-      validator: (v) {
-        if (v?.isEmpty ?? true) return 'الزامی';
-
-        final cleanValue = v!.replaceAll(',', '');
-
-        if (isDecimal) {
-          final number = double.tryParse(cleanValue);
-          if (number == null) return 'عدد معتبر وارد کنید';
-          if (number < 0) return 'عدد نمی‌تواند منفی باشد';
-        } else {
-          final number = int.tryParse(cleanValue);
-          if (number == null) return 'عدد معتبر وارد کنید';
-          if (number < 0) return 'عدد نمی‌تواند منفی باشد';
-        }
-
-        return null;
-      },
+      validator: (v) => (v?.isEmpty ?? true) ? 'الزامی' : null,
     );
   }
 
   Widget _buildPercentField(String label, TextEditingController controller) {
     return TextFormField(
       controller: controller,
-      keyboardType: TextInputType.numberWithOptions(decimal: true),
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-      ],
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 16,
-        ),
         suffixText: '%',
       ),
-      style: const TextStyle(fontFamily: 'Vazir'),
-      onChanged: (value) {
-        if (_formKey.currentState != null) {
-          _formKey.currentState!.validate();
-        }
-      },
-      validator: (v) {
-        if (v?.isEmpty ?? true) return 'الزامی';
-
-        final number = double.tryParse(v!);
-        if (number == null) return 'عدد معتبر وارد کنید';
-        if (number < 0) return 'درصد نمی‌تواند منفی باشد';
-        if (number > 100) return 'درصد نمی‌تواند بیشتر از ۱۰۰ باشد';
-
-        return null;
-      },
+      validator: (v) => (v?.isEmpty ?? true) ? 'الزامی' : null,
     );
   }
 
   Widget _buildPpmField(String label, TextEditingController controller) {
     return TextFormField(
       controller: controller,
-      keyboardType: TextInputType.numberWithOptions(decimal: true),
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-      ],
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 16,
-        ),
         suffixText: 'ppm',
       ),
-      style: const TextStyle(fontFamily: 'Vazir'),
-      onChanged: (value) {
-        if (_formKey.currentState != null) {
-          _formKey.currentState!.validate();
-        }
-      },
-      validator: (v) {
-        if (v?.isEmpty ?? true) return 'الزامی';
-
-        final number = double.tryParse(v!);
-        if (number == null) return 'عدد معتبر وارد کنید';
-        if (number < 0) return 'مقدار نمی‌تواند منفی باشد';
-        if (number > 1000000)
-          return 'مقدار نمی‌تواند بیشتر از ۱,۰۰۰,۰۰۰ ppm باشد';
-
-        return null;
-      },
+      validator: (v) => null, // اختیاری
     );
   }
 
-  Widget _buildField(
-    String label,
-    TextEditingController controller,
-    TextInputType type,
-  ) {
+  Widget _buildField(String label, TextEditingController controller) {
     return TextFormField(
       controller: controller,
-      keyboardType: type,
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 16,
-        ),
       ),
-      style: const TextStyle(fontFamily: 'Vazir'),
-      onChanged: (value) {
-        if (_formKey.currentState != null) {
-          _formKey.currentState!.validate();
-        }
-      },
-      validator: (v) {
-        if (v?.isEmpty ?? true) return 'الزامی';
-        return null;
-      },
+      validator: (v) => (v?.trim().isEmpty ?? true) ? 'الزامی' : null,
     );
   }
 
   Widget _buildSenderDropdown() {
-    return Row(
-      children: [
-        Expanded(
-          child: _isLoadingSenders
-              ? const LinearProgressIndicator()
-              : _senders.isEmpty
-              ? const Text(
-                  'هیچ فرستنده‌ای ثبت نشده',
-                  style: TextStyle(color: Colors.grey),
-                )
-              : DropdownButtonFormField<Sender>(
-                  value: _selectedSender,
-                  decoration: InputDecoration(
-                    labelText: 'فرستنده',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 16,
-                    ),
-                  ),
-                  items: _senders
-                      .map(
-                        (sender) => DropdownMenuItem(
-                          value: sender,
-                          child: Text(sender.senderName),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (Sender? newValue) =>
-                      setState(() => _selectedSender = newValue),
-                  validator: (value) =>
-                      value == null ? 'فرستنده را انتخاب کنید' : null,
-                ),
-        ),
-        const SizedBox(width: 8),
-        IconButton(
-          icon: const Icon(Icons.people, color: Colors.blue),
-          tooltip: 'مدیریت فرستنده‌ها',
-          onPressed: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SenderManagementScreen()),
-            );
-            _loadSenders();
-          },
-        ),
-      ],
+    if (_isLoadingSenders) {
+      return const LinearProgressIndicator();
+    }
+
+    return DropdownButtonFormField<Sender>(
+      value: _selectedSender,
+      decoration: InputDecoration(
+        labelText: 'فرستنده',
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      items: _senders
+          .map(
+            (sender) =>
+                DropdownMenuItem(value: sender, child: Text(sender.senderName)),
+          )
+          .toList(),
+      onChanged: (v) => setState(() => _selectedSender = v),
+      validator: (v) => v == null ? 'الزامی' : null,
     );
   }
 
@@ -567,10 +421,6 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
       decoration: InputDecoration(
         labelText: 'تغییر رنگ',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 16,
-        ),
       ),
       items: [
         'A',
@@ -579,198 +429,126 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
         'D',
       ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
       onChanged: (v) => setState(() => _selectedColorChange = v),
-      validator: (v) => v == null ? 'انتخاب کنید' : null,
+      validator: (v) => v == null ? 'الزامی' : null,
     );
   }
 
-  PreferredSizeWidget _buildAppBar() => PreferredSize(
-    preferredSize: const Size.fromHeight(70),
-    child: SafeArea(
-      child: Container(
-        margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
-        decoration: BoxDecoration(
-          color: Colors.blue[700],
-          borderRadius: BorderRadius.circular(40),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-          title: const Text(
-            'ثبت بار',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              fontSize: 18,
-              fontFamily: 'Vazir',
-            ),
-          ),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(20)),
-          ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.white,
-                child: ClipOval(
-                  child: Image.asset(
-                    'assets/image/Logo.jpg',
-                    width: 32,
-                    height: 32,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+  Widget _buildTotalPpmIndicator() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
       ),
-    ),
-  );
-
-  Widget _buildHeaderSection() => Card(
-    elevation: 4,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    child: const Padding(
-      padding: EdgeInsets.all(16),
       child: Row(
         children: [
-          Icon(Icons.edit_calendar, color: Colors.blue, size: 20),
-          SizedBox(width: 8),
+          const Icon(Icons.analytics, color: Colors.blue),
+          const SizedBox(width: 8),
           Text(
-            'اطلاعات بار',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              fontFamily: 'Vazir',
-            ),
+            'مجموع: ${_formatNumber(_totalPpm.toInt())} ppm',
+            style: const TextStyle(fontFamily: 'Vazir'),
           ),
-          Spacer(),
-          Text(
-            'ثبت اطلاعات',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-              fontFamily: 'Vazir',
-            ),
-          ),
-          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
         ],
       ),
-    ),
-  );
+    );
+  }
 
-  Widget _buildActionButtons() => Row(
-    children: [
-      Expanded(
-        child: ElevatedButton(
-          onPressed: () async {
-            if (!_formKey.currentState!.validate()) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('لطفا خطاهای فرم را برطرف کنید'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-
-            if (_totalPpm > 1000000) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'مجموع مقادیر نمی‌تواند بیشتر از ۱,۰۰۰,۰۰۰ ppm باشد (${_formatNumber(_totalPpm.toInt())} ppm)',
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-
-            final gregorian = _selectedJalaliDate!.toDateTime();
-            final isoDate =
-                '${gregorian.year}-${_twoDigits(gregorian.month)}-${_twoDigits(gregorian.day)}';
-
-            final cargo = CargoModel(
-              receiveDate: isoDate,
-              senderId: _selectedSender!.id ?? 0,
-              weightScale: _parseFormattedDouble(_weightController.text),
-              humidity: _parseFormattedDouble(_moistureController.text),
-              pricePerUnit: _parseFormattedNumber(_priceController.text),
-              pvc: _parseFormattedDouble(_pvcController.text),
-              dirtyFlake: _parseFormattedDouble(_dirtyFlakeController.text),
-              polymer: _parseFormattedDouble(_polymerController.text),
-              wasteMaterial: _parseFormattedDouble(_wasteController.text),
-              coloredFlake: _parseFormattedDouble(_coloredFlakeController.text),
-              colorChange: _selectedColorChange!,
-              userName: _enteredByController.text.trim(),
-            );
-
-            final messenger = ScaffoldMessenger.of(context);
-            messenger.showSnackBar(
-              const SnackBar(
-                content: Text('در حال ثبت...'),
-                backgroundColor: Colors.blue,
-              ),
-            );
-
-            final result = await CargoApi.addCargo(cargo);
-
-            messenger.hideCurrentSnackBar();
-            messenger.showSnackBar(
-              SnackBar(
-                content: Text(result["message"]),
-                backgroundColor: result["success"] ? Colors.green : Colors.red,
-              ),
-            );
-
-            if (result["success"]) {
-              if (mounted) Navigator.pop(context);
-            }
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton(
+            onPressed: _submitCargo,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              padding: const EdgeInsets.symmetric(vertical: 16),
             ),
-          ),
-          child: const Text(
-            'ثبت نهایی',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              fontFamily: 'Vazir',
+            child: const Text(
+              'ثبت نهایی',
+              style: TextStyle(fontFamily: 'Vazir'),
             ),
           ),
         ),
-      ),
-      const SizedBox(width: 12),
-      Expanded(
-        child: OutlinedButton(
-          onPressed: () => Navigator.pop(context),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            side: const BorderSide(color: Colors.grey),
-          ),
-          child: const Text(
-            'انصراف',
-            style: TextStyle(color: Colors.grey, fontFamily: 'Vazir'),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('انصراف', style: TextStyle(fontFamily: 'Vazir')),
           ),
         ),
+      ],
+    );
+  }
+
+  // متد ثبت نهایی
+  Future<void> _submitCargo() async {
+    if (!_formKey.currentState!.validate()) {
+      _showSnackBar('لطفاً تمام فیلدهای الزامی را پر کنید', Colors.orange);
+      return;
+    }
+
+    if (_selectedSender == null || _selectedColorChange == null) {
+      _showSnackBar('لطفاً فرستنده و تغییر رنگ را انتخاب کنید', Colors.orange);
+      return;
+    }
+
+    final loadingSnackBar = SnackBar(
+      content: const Row(
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(width: 16),
+          Text('در حال ثبت...'),
+        ],
       ),
-    ],
-  );
+      duration: const Duration(minutes: 1),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(loadingSnackBar);
+
+    try {
+      final gregorian = _selectedJalaliDate!.toDateTime();
+      final receiveDate =
+          '${gregorian.year}-${_twoDigits(gregorian.month)}-${_twoDigits(gregorian.day)}';
+
+      final cargo = CargoModel(
+        receiveDate: receiveDate,
+        senderId: _selectedSender!.id!,
+        weightScale:
+            double.tryParse(_weightController.text.replaceAll(',', '')) ?? 0.0,
+        humidity: double.tryParse(_moistureController.text) ?? 0.0,
+        pricePerUnit:
+            int.tryParse(_priceController.text.replaceAll(',', '')) ?? 0,
+        pvc: double.tryParse(_pvcController.text) ?? 0.0,
+        dirtyFlake: double.tryParse(_dirtyFlakeController.text) ?? 0.0,
+        polymer: double.tryParse(_polymerController.text) ?? 0.0,
+        wasteMaterial: double.tryParse(_wasteController.text) ?? 0.0,
+        coloredFlake: double.tryParse(_coloredFlakeController.text) ?? 0.0,
+        colorChange: _selectedColorChange!,
+        userName: _enteredByController.text.trim().isEmpty
+            ? 'نامشخص'
+            : _enteredByController.text.trim(),
+      );
+
+      final result = await CargoApi.addCargo(cargo);
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      if (result['success']) {
+        _showSnackBar(result['message'], Colors.green);
+        await Future.delayed(const Duration(seconds: 1));
+        if (mounted) Navigator.pop(context, true);
+      } else {
+        _showSnackBar(result['message'], Colors.red);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      _showSnackBar('خطای غیرمنتظره: $e', Colors.red);
+    }
+  }
+
+  void _showSnackBar(String message, Color backgroundColor) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: backgroundColor),
+    );
+  }
 }
