@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:shamsi_date/shamsi_date.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 import '../models/sender_model.dart';
 import '../Api/cargoapi.dart';
@@ -38,8 +37,8 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
   Sender? _selectedSender;
   bool _isLoadingSenders = true;
 
-  // متغیر برای نمایش مجموع درصدها
-  double _totalPercent = 0.0;
+  // متغیر برای نمایش مجموع ppm
+  double _totalPpm = 0.0;
 
   @override
   void initState() {
@@ -48,9 +47,9 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
     _displayDate = _formatJalali(_selectedJalaliDate!);
     _loadSenders();
 
-    // افزودن listener برای فرمت کردن اعداد و محاسبه مجموع درصدها
+    // افزودن listener برای فرمت کردن اعداد و محاسبه مجموع ppm
     _setupNumberFormatting();
-    _setupPercentListeners();
+    _setupPpmListeners();
   }
 
   void _setupNumberFormatting() {
@@ -69,9 +68,8 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
     });
   }
 
-  void _setupPercentListeners() {
-    final percentControllers = [
-      _moistureController,
+  void _setupPpmListeners() {
+    final ppmControllers = [
       _pvcController,
       _dirtyFlakeController,
       _polymerController,
@@ -79,14 +77,13 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
       _coloredFlakeController,
     ];
 
-    for (var controller in percentControllers) {
-      controller.addListener(_calculateTotalPercent);
+    for (var controller in ppmControllers) {
+      controller.addListener(_calculateTotalPpm);
     }
   }
 
-  void _calculateTotalPercent() {
-    final percentControllers = [
-      _moistureController,
+  void _calculateTotalPpm() {
+    final ppmControllers = [
       _pvcController,
       _dirtyFlakeController,
       _polymerController,
@@ -95,13 +92,13 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
     ];
 
     double total = 0;
-    for (var controller in percentControllers) {
+    for (var controller in ppmControllers) {
       final value = double.tryParse(controller.text) ?? 0;
       total += value;
     }
 
     setState(() {
-      _totalPercent = total;
+      _totalPpm = total;
     });
   }
 
@@ -233,28 +230,25 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
                                       TextInputType.number,
                                       formatNumber: true,
                                     ),
-                                    _buildPercentField(
-                                      'PVC (%)',
-                                      _pvcController,
-                                    ),
-                                    _buildPercentField(
-                                      'پرک کثیف (%)',
+                                    _buildPpmField('PVC (ppm)', _pvcController),
+                                    _buildPpmField(
+                                      'پرک کثیف (ppm)',
                                       _dirtyFlakeController,
                                     ),
-                                    _buildPercentField(
-                                      'پلیمر (%)',
+                                    _buildPpmField(
+                                      'پلیمر (ppm)',
                                       _polymerController,
                                     ),
-                                    _buildPercentField(
-                                      'مواد زائد (%)',
+                                    _buildPpmField(
+                                      'مواد زائد (ppm)',
                                       _wasteController,
                                     ),
-                                    _buildPercentField(
-                                      'پرک رنگی (%)',
+                                    _buildPpmField(
+                                      'پرک رنگی (ppm)',
                                       _coloredFlakeController,
                                     ),
-                                    // نمایش مجموع درصدها
-                                    _buildTotalPercentIndicator(),
+                                    // نمایش مجموع ppm
+                                    _buildTotalPpmIndicator(),
                                     _buildColorChangeDropdown(),
                                     _buildField(
                                       'وارد کننده اطلاعات',
@@ -286,28 +280,28 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
     );
   }
 
-  // ویجت برای نمایش مجموع درصدها
-  Widget _buildTotalPercentIndicator() {
+  // ویجت برای نمایش مجموع ppm
+  Widget _buildTotalPpmIndicator() {
     Color color;
     IconData icon;
     String status;
 
-    if (_totalPercent == 0) {
+    if (_totalPpm == 0) {
       color = Colors.grey;
       icon = Icons.info_outline;
-      status = 'درصدها وارد نشده‌اند';
-    } else if (_totalPercent > 100) {
+      status = 'مقادیر وارد نشده‌اند';
+    } else if (_totalPpm > 1000000) {
       color = Colors.red;
       icon = Icons.error_outline;
-      status = 'مجموع درصدها بیشتر از ۱۰۰ است';
-    } else if (_totalPercent == 100) {
+      status = 'مجموع بیش از ۱,۰۰۰,۰۰۰ ppm است';
+    } else if (_totalPpm >= 900000 && _totalPpm <= 1000000) {
       color = Colors.green;
       icon = Icons.check_circle_outline;
-      status = 'مجموع درصدها کامل است';
+      status = 'مقادیر در محدوده قابل قبول';
     } else {
       color = Colors.orange;
       icon = Icons.warning_amber_outlined;
-      status = 'مجموع درصدها کمتر از ۱۰۰ است';
+      status = 'مجموع کمتر از حد انتظار است';
     }
 
     return Container(
@@ -326,7 +320,7 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'مجموع درصدها: ${_totalPercent.toStringAsFixed(1)}%',
+                  'مجموع: ${_formatNumber(_totalPpm.toInt())} ppm',
                   style: TextStyle(
                     fontFamily: 'Vazir',
                     fontWeight: FontWeight.bold,
@@ -390,7 +384,6 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
       ),
       style: const TextStyle(fontFamily: 'Vazir'),
       onChanged: (value) {
-        // اعتبارسنجی در لحظه
         if (_formKey.currentState != null) {
           _formKey.currentState!.validate();
         }
@@ -433,7 +426,6 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
       ),
       style: const TextStyle(fontFamily: 'Vazir'),
       onChanged: (value) {
-        // اعتبارسنجی در لحظه
         if (_formKey.currentState != null) {
           _formKey.currentState!.validate();
         }
@@ -445,6 +437,42 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
         if (number == null) return 'عدد معتبر وارد کنید';
         if (number < 0) return 'درصد نمی‌تواند منفی باشد';
         if (number > 100) return 'درصد نمی‌تواند بیشتر از ۱۰۰ باشد';
+
+        return null;
+      },
+    );
+  }
+
+  Widget _buildPpmField(String label, TextEditingController controller) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+      ],
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 16,
+        ),
+        suffixText: 'ppm',
+      ),
+      style: const TextStyle(fontFamily: 'Vazir'),
+      onChanged: (value) {
+        if (_formKey.currentState != null) {
+          _formKey.currentState!.validate();
+        }
+      },
+      validator: (v) {
+        if (v?.isEmpty ?? true) return 'الزامی';
+
+        final number = double.tryParse(v!);
+        if (number == null) return 'عدد معتبر وارد کنید';
+        if (number < 0) return 'مقدار نمی‌تواند منفی باشد';
+        if (number > 1000000)
+          return 'مقدار نمی‌تواند بیشتر از ۱,۰۰۰,۰۰۰ ppm باشد';
 
         return null;
       },
@@ -469,7 +497,6 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
       ),
       style: const TextStyle(fontFamily: 'Vazir'),
       onChanged: (value) {
-        // اعتبارسنجی در لحظه
         if (_formKey.currentState != null) {
           _formKey.currentState!.validate();
         }
@@ -481,7 +508,6 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
     );
   }
 
-  // بقیه متدها بدون تغییر می‌مانند...
   Widget _buildSenderDropdown() {
     return Row(
       children: [
@@ -658,11 +684,11 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen> {
               return;
             }
 
-            if (_totalPercent > 100) {
+            if (_totalPpm > 1000000) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    'مجموع درصدها نمی‌تواند بیشتر از ۱۰۰ باشد (${_totalPercent.toStringAsFixed(1)}%)',
+                    'مجموع مقادیر نمی‌تواند بیشتر از ۱,۰۰۰,۰۰۰ ppm باشد (${_formatNumber(_totalPpm.toInt())} ppm)',
                   ),
                   backgroundColor: Colors.red,
                 ),

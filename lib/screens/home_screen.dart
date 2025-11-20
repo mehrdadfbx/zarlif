@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:zarlif/screens/CargoAnalysisChartScreen.dart';
+import 'package:zarlif/screens/laboratory_report_screen.dart';
 import 'package:zarlif/screens/CargoRegistration_Screen.dart';
 import 'sender_screen.dart';
+import 'sell_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -159,7 +160,12 @@ class HomeScreen extends StatelessWidget {
           title: 'گزارش واحد فروش',
           icon: Icons.bar_chart,
           color: Colors.orange,
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SalesScreen()),
+            );
+          },
         ),
         _buildMenuButton(
           title: 'فرستنده‌های بار',
@@ -182,7 +188,7 @@ class HomeScreen extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const CargoReportScreen(),
+                builder: (context) => const LaboratoryReportScreen(),
               ),
             );
           },
