@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+// TODO Implement this library.
+>>>>>>> 6206136ae5117f2fe88072f23139ebb6e7530c7d
 // models/laboratory_report.dart
 class CompanyData {
   final String name;

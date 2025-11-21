@@ -46,6 +46,8 @@ class CargoModel {
 
   // برای دریافت از سرور (این متد گم شده بود!)
   factory CargoModel.fromJson(Map<String, dynamic> json) {
+
+
     double parseDouble(dynamic value) {
       if (value is num) return value.toDouble();
       if (value is String) return double.tryParse(value) ?? 0.0;
@@ -69,6 +71,19 @@ class CargoModel {
       polymer: parseDouble(json['polymer']),
       wasteMaterial: parseDouble(json['waste_material']),
       coloredFlake: parseDouble(json['colored_flake']),
+
+    return CargoModel(
+      receiveDate: json['receive_date'] as String,
+      senderId: json['sender_id'] as int,
+      weightScale: (json['weight_scale'] as num).toDouble(),
+      humidity: (json['humidity'] as num).toDouble(),
+      pricePerUnit: json['price_per_unit'] as int,
+      pvc: (json['pvc'] as num).toDouble(),
+      dirtyFlake: (json['dirty_flake'] as num).toDouble(),
+      polymer: (json['polymer'] as num).toDouble(),
+      wasteMaterial: (json['waste_material'] as num).toDouble(),
+      coloredFlake: (json['colored_flake'] as num).toDouble(),
+>>>>>>> 6206136ae5117f2fe88072f23139ebb6e7530c7d
       colorChange: json['color_change'] as String,
       userName: json['user_name'] as String,
     );
