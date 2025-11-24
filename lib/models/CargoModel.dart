@@ -13,6 +13,7 @@ class CargoModel {
   final double coloredFlake;
   final String colorChange;
   final String userName;
+  final int testNumber;
 
   const CargoModel({
     required this.receiveDate,
@@ -27,6 +28,7 @@ class CargoModel {
     required this.coloredFlake,
     required this.colorChange,
     required this.userName,
+    required this.testNumber,
   });
 
   /// تبدیل مدل به JSON برای ارسال به سرور
@@ -74,6 +76,7 @@ class CargoModel {
       coloredFlake: parseDouble(json['colored_flake']),
       colorChange: json['color_change'] ?? "",
       userName: json['user_name'] ?? "",
+      testNumber: 0,
     );
   }
 
