@@ -44,6 +44,8 @@ dependencies:
   dropdown_search: ^6.0.2
   fl_chart: ^1.1.1
   syncfusion_flutter_charts: ^31.2.5
+  shared_preferences: ^2.5.3
+  provider: ^6.1.5+1
 #  flutter_native_splash: ^2.4.7
 
 dev_dependencies:

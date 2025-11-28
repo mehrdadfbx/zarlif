@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import '../models/cargomodel.dart';
 
 class CargoApi {
-  static const String _baseUrl = "https://moghzi.ir/server/server.php";
+  static const String _baseUrl = "https://moghzi.ir/server/zarlif/server.php";
   static const Duration _timeout = Duration(seconds: 20);
 
   // هدرهای ثابت درخواست‌ها
@@ -40,7 +40,7 @@ class CargoApi {
   // 🚀 دریافت لیست تمام بارها
   // ================================
   static Future<List<CargoModel>> getAllCargos() async {
-    final uri = Uri.parse("$_baseUrl?action=get_all_cargos");
+    final uri = Uri.parse("$_baseUrl?action=get_cargos");
 
     try {
       final response = await http.get(uri).timeout(const Duration(seconds: 15));

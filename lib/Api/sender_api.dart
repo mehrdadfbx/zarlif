@@ -10,7 +10,7 @@ class ApiActions {
 }
 
 class SenderApi {
-  static const String baseUrl = "https://moghzi.ir/server/server.php";
+  static const String baseUrl = "https://moghzi.ir/server/zarlif/server.php";
 
   static final Map<String, String> _jsonHeaders = {
     'Content-Type': 'application/json; charset=UTF-8',

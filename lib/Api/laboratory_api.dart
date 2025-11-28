@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '../models/laboratory_report.dart';
 
 class LaboratoryApi {
-  static const String baseUrl = 'https://moghzi.ir/server/server.php';
+  static const String baseUrl = 'https://moghzi.ir/server/zarlif/server.php';
 
   static Future<LaboratoryReport> fetchReport() async {
     final uri = Uri.parse('$baseUrl?action=get_laboratory_reports');
