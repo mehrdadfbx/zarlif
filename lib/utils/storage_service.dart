@@ -1,3 +1,4 @@
+// storage_service.dart
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StorageService {
@@ -10,10 +11,16 @@ class StorageService {
     String expiresAt,
     String userData,
   ) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_tokenKey, token);
-    await prefs.setString(_tokenExpiryKey, expiresAt);
-    await prefs.setString(_userDataKey, userData);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await Future.wait([
+        prefs.setString(_tokenKey, token),
+        prefs.setString(_tokenExpiryKey, expiresAt),
+        prefs.setString(_userDataKey, userData),
+      ]);
+    } catch (e) {
+      throw Exception('خطا در ذخیره اطلاعات: $e');
+    }
   }
 
   static Future<String?> getToken() async {
@@ -26,10 +33,31 @@ class StorageService {
     return prefs.getString(_userDataKey);
   }
 
-  static Future<void> clearAuthData() async {
+  // اضافه کردن چک کردن انقضای توکن
+  static Future<bool> isTokenValid() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tokenKey);
-    await prefs.remove(_tokenExpiryKey);
-    await prefs.remove(_userDataKey);
+    final expiresAt = prefs.getString(_tokenExpiryKey);
+
+    if (expiresAt == null) return false;
+
+    try {
+      final expiryDate = DateTime.parse(expiresAt);
+      return expiryDate.isAfter(DateTime.now());
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<void> clearAuthData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await Future.wait([
+        prefs.remove(_tokenKey),
+        prefs.remove(_tokenExpiryKey),
+        prefs.remove(_userDataKey),
+      ]);
+    } catch (e) {
+      throw Exception('خطا در پاک کردن اطلاعات: $e');
+    }
   }
 }

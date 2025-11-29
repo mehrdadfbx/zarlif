@@ -1,10 +1,9 @@
+// phone_login_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../models/auth_response.dart';
 import '../Api/auth_service.dart';
-import '../utils/storage_service.dart';
-import 'home_screen.dart';
+import 'verification_screen.dart';
 
 class PhoneLoginScreen extends StatefulWidget {
   const PhoneLoginScreen({super.key});
@@ -15,43 +14,44 @@ class PhoneLoginScreen extends StatefulWidget {
 
 class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   final TextEditingController _phoneController = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
-  Future<void> _login() async {
-    final phone = _phoneController.text.trim();
-
-    if (phone.isEmpty || phone.length < 10) {
-      _showSnackBar(
-        'لطفاً شماره تلفن معتبر وارد کنید.',
-        const Color.fromARGB(255, 255, 83, 71),
-      );
-      return;
+  // اعتبارسنجی شماره تلفن
+  String? _validatePhone(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'لطفاً شماره تلفن را وارد کنید';
     }
+
+    final phoneRegex = RegExp(r'^09[0-9]{9}$');
+    if (!phoneRegex.hasMatch(value)) {
+      return 'شماره تلفن معتبر وارد کنید (09xxxxxxxxx)';
+    }
+
+    return null;
+  }
+
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final phone = _phoneController.text.trim();
 
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final AuthResponse authResponse = await AuthService.login(phone);
+      final AuthResponse authResponse = await AuthService.requestCode(phone);
 
       if (authResponse.success) {
-        // ذخیره داده‌ها با SharedPreferences
-        await StorageService.saveAuthData(
-          authResponse.token,
-          authResponse.expiresAt,
-          json.encode(authResponse.user.toJson()),
-        );
-
-        // رفتن به صفحه اصلی
-        _navigateToHome();
-
+        // رفتن به صفحه تأیید کد به جای صفحه اصلی
+        _navigateToVerification(phone);
         _showSnackBar(authResponse.message, Colors.green);
       } else {
-        _showSnackBar(authResponse.message, Colors.red);
+        _showSnackBar(authResponse.message, Colors.orange);
       }
     } catch (error) {
-      _showSnackBar('خطا در ارتباط با سرور: $error', Colors.red);
+      _showSnackBar('خطا: $error', Colors.red);
     } finally {
       if (mounted) {
         setState(() {
@@ -61,12 +61,12 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     }
   }
 
-  void _navigateToHome() {
-    Navigator.pushReplacement(
+  void _navigateToVerification(String phone) {
+    Navigator.push(
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const HomeScreen(),
+            VerificationScreen(phone: phone),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           const begin = Offset(1.0, 0.0);
           const end = Offset.zero;
@@ -112,70 +112,74 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
             ),
             child: Padding(
               padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // استفاده از لوگوی شرکت
-                  Image.asset(
-                    'assets/image/Logo.jpg',
-                    height: 80,
-                    width: 80,
-                    fit: BoxFit.contain,
-                    // errorBuilder: (context, error, stackTrace) {
-                    //   // در صورت بروز خطا در بارگذاری لوگو
-                    //   // return Container(
-                    //   //   height: 80,
-                    //   //   width: 80,
-                    //   //   decoration: BoxDecoration(
-                    //   //     color: Colors.grey[200],
-                    //   //     borderRadius: BorderRadius.circular(12),
-                    //   //   ),
-                    //   //   // child: const Icon(
-                    //   //   //   Icons.business,
-                    //   //   //   size: 40,
-                    //   //   //   color: Colors.blue,
-                    //   //   // ),
-                    //   // );
-                    // },
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'ورود به سامانه',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // استفاده از لوگوی شرکت
+                    Image.asset(
+                      'assets/image/Logo.jpg',
+                      height: 80,
+                      width: 80,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        // در صورت بروز خطا در بارگذاری لوگو
+                        return Container(
+                          height: 80,
+                          width: 80,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.business,
+                            size: 40,
+                            color: Colors.blue,
+                          ),
+                        );
+                      },
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  TextField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    textAlign: TextAlign.center,
-                    decoration: InputDecoration(
-                      hintText: '09xxxxxxxxx',
-                      labelText: 'شماره تلفن',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      prefixIcon: const Icon(Icons.phone_android),
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 16,
-                        horizontal: 20,
+                    const SizedBox(height: 16),
+                    const Text(
+                      'ورود به سامانه',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
                       ),
                     ),
-                    onSubmitted: (_) => _login(),
-                  ),
-                  const SizedBox(height: 20),
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    width: double.infinity,
-                    height: _isLoading ? 48 : 50,
-                    child: _isLoading
-                        ? _buildLoadingButton()
-                        : _buildLoginButton(),
-                  ),
-                ],
+                    const SizedBox(height: 24),
+                    TextFormField(
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      textAlign: TextAlign.center,
+                      validator: _validatePhone,
+                      decoration: InputDecoration(
+                        hintText: '09xxxxxxxxx',
+                        labelText: 'شماره تلفن',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        prefixIcon: const Icon(Icons.phone_android),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 20,
+                        ),
+                      ),
+                      onFieldSubmitted: (_) => _login(),
+                    ),
+                    const SizedBox(height: 20),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: double.infinity,
+                      height: _isLoading ? 48 : 50,
+                      child: _isLoading
+                          ? _buildLoadingButton()
+                          : _buildLoginButton(),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -196,7 +200,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         shadowColor: Colors.blue.withOpacity(0.5),
       ),
       child: const Text(
-        'ورود',
+        'دریافت کد تأیید',
         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     );
