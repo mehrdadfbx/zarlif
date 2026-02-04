@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter/material.dart';
 import '../models/user_info_response.dart';
 import '../Api/auth_service.dart';

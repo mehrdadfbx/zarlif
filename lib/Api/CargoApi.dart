@@ -1,5 +1,5 @@
 // Api/cargo_api.dart
-// ignore_for_file: unused_element
+// ignore_for_file: unused_element, avoid_print
 
 import 'dart:convert';
 import 'package:http/http.dart' as http;

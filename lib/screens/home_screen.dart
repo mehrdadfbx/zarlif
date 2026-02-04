@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:zarlif/screens/laboratory_report_screen.dart';
 import 'package:zarlif/screens/CargoRegistration_Screen.dart';

@@ -1,6 +1,9 @@
+// ignore_for_file: avoid_print, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
+import 'package:zarlif/Api/sender_api.dart';
 import '../models/sender_model.dart';
-import '../Api/sender_api.dart';
+import '../api/sender_api.dart' hide SenderApi;
 
 class SenderManagementScreen extends StatefulWidget {
   const SenderManagementScreen({super.key});
@@ -13,6 +16,7 @@ class _SenderManagementScreenState extends State<SenderManagementScreen> {
   List<Sender> _senders = [];
   bool _isLoading = false;
   bool _isOperationInProgress = false;
+  String? _errorMessage;
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -25,13 +29,27 @@ class _SenderManagementScreenState extends State<SenderManagementScreen> {
   }
 
   Future<void> _loadSenders() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
     try {
-      final data = await SenderApi.getSenders();
-      setState(() => _senders = data);
-      print('تعداد فرستنده‌ها loaded: ${data.length}');
+      final response = await SenderApi.getSenders();
+
+      if (response.isSuccess) {
+        setState(() => _senders = response.data);
+        print('✅ تعداد فرستنده‌ها دریافت شده: ${response.data.length}');
+      } else {
+        setState(() {
+          _errorMessage = response.message;
+        });
+      }
     } catch (e) {
-      _showSnackBar("خطا در بارگذاری فرستنده‌ها: $e", isError: true);
+      setState(() {
+        _errorMessage = "خطا در بارگذاری فرستنده‌ها: $e";
+      });
+      print('❌ خطا: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -49,29 +67,28 @@ class _SenderManagementScreenState extends State<SenderManagementScreen> {
 
     if (_isOperationInProgress) return;
 
-    setState(() => _isOperationInProgress = true);
-
-    final newSender = Sender(
-      addedDate: DateTime.now(),
-      senderName: name,
-      phoneNumber: phone,
-      address: address,
-    );
-
-    print('در حال افزودن فرستنده: ${newSender.toMap()}');
+    setState(() {
+      _isOperationInProgress = true;
+      _errorMessage = null;
+    });
 
     try {
-      final success = await SenderApi.addSender(newSender);
+      final response = await SenderApi.addSender(
+        name: name,
+        phone: phone,
+        address: address,
+      );
 
-      if (success) {
+      if (response.isSuccess) {
         _showSnackBar("فرستنده با موفقیت اضافه شد");
         await _loadSenders(); // رفرش لیست
         _clearControllers();
       } else {
-        _showSnackBar("خطا در افزودن فرستنده", isError: true);
+        _showSnackBar(response.message, isError: true);
       }
     } catch (e) {
       _showSnackBar("خطا در افزودن: $e", isError: true);
+      print('❌ خطا: $e');
     } finally {
       setState(() => _isOperationInProgress = false);
     }
@@ -91,44 +108,35 @@ class _SenderManagementScreenState extends State<SenderManagementScreen> {
 
     setState(() => _isOperationInProgress = true);
 
-    final updatedSender = Sender(
-      id: sender.id,
-      addedDate: sender.addedDate,
-      senderName: name,
-      phoneNumber: phone,
-      address: address,
-    );
-
-    print('در حال ویرایش فرستنده: ${updatedSender.toMap()}');
-
     try {
-      final success = await SenderApi.updateSender(updatedSender);
+      final response = await SenderApi.updateSender(
+        id: sender.id,
+        name: name,
+        phone: phone,
+        address: address,
+      );
 
-      if (success) {
+      if (response.isSuccess) {
         _showSnackBar("فرستنده با موفقیت ویرایش شد");
         await _loadSenders(); // رفرش لیست
         _clearControllers();
       } else {
-        _showSnackBar("خطا در ویرایش فرستنده", isError: true);
+        _showSnackBar(response.message, isError: true);
       }
     } catch (e) {
       _showSnackBar("خطا در ویرایش: $e", isError: true);
+      print('❌ خطا: $e');
     } finally {
       setState(() => _isOperationInProgress = false);
     }
   }
 
   Future<void> _deleteSender(Sender sender) async {
-    if (sender.id == null) {
-      _showSnackBar("خطا: شناسه فرستنده نامعتبر است", isError: true);
-      return;
-    }
-
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("حذف فرستنده"),
-        content: Text("آیا از حذف «${sender.senderName}» مطمئن هستید؟"),
+        content: Text("آیا از حذف «${sender.name}» مطمئن هستید؟"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -146,19 +154,18 @@ class _SenderManagementScreenState extends State<SenderManagementScreen> {
 
     setState(() => _isOperationInProgress = true);
 
-    print('در حال حذف فرستنده با ID: ${sender.id}');
-
     try {
-      final success = await SenderApi.deleteSender(sender.id!);
+      final response = await SenderApi.deleteSender(sender.id);
 
-      if (success) {
+      if (response.isSuccess) {
         _showSnackBar("فرستنده حذف شد");
         await _loadSenders(); // رفرش لیست
       } else {
-        _showSnackBar("خطا در حذف فرستنده", isError: true);
+        _showSnackBar(response.message, isError: true);
       }
     } catch (e) {
       _showSnackBar("خطا در حذف: $e", isError: true);
+      print('❌ خطا: $e');
     } finally {
       setState(() => _isOperationInProgress = false);
     }
@@ -203,8 +210,8 @@ class _SenderManagementScreenState extends State<SenderManagementScreen> {
   }
 
   void _showEditBottomSheet(Sender sender) {
-    _nameController.text = sender.senderName;
-    _phoneController.text = sender.phoneNumber;
+    _nameController.text = sender.name;
+    _phoneController.text = sender.phone;
     _addressController.text = sender.address;
 
     showModalBottomSheet(
@@ -336,6 +343,13 @@ class _SenderManagementScreenState extends State<SenderManagementScreen> {
                         width: 32,
                         height: 32,
                         fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(
+                            Icons.business,
+                            size: 20,
+                            color: Colors.blue,
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -410,6 +424,30 @@ class _SenderManagementScreenState extends State<SenderManagementScreen> {
               const Divider(),
               const SizedBox(height: 10),
 
+              // نمایش خطا
+              if (_errorMessage != null)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.red[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error, color: Colors.red[700]),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(color: Colors.red[700]),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
               // لیست فرستنده‌ها
               Expanded(
                 child: _isLoading && _senders.isEmpty
@@ -434,7 +472,7 @@ class _SenderManagementScreenState extends State<SenderManagementScreen> {
                                 vertical: 8,
                               ),
                               title: Text(
-                                sender.senderName,
+                                sender.name,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
@@ -444,9 +482,9 @@ class _SenderManagementScreenState extends State<SenderManagementScreen> {
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (sender.phoneNumber.isNotEmpty)
+                                  if (sender.phone.isNotEmpty)
                                     Text(
-                                      "📞 ${sender.phoneNumber}",
+                                      "📞 ${sender.phone}",
                                       textDirection: TextDirection.rtl,
                                     ),
                                   if (sender.address.isNotEmpty)
@@ -457,9 +495,16 @@ class _SenderManagementScreenState extends State<SenderManagementScreen> {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   Text(
-                                    "شناسه: ${sender.id ?? 'نامشخص'}",
+                                    "شناسه: ${sender.id}",
                                     style: const TextStyle(
                                       fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  Text(
+                                    "تاریخ ایجاد: ${_formatDate(sender.createdAt)}",
+                                    style: const TextStyle(
+                                      fontSize: 11,
                                       color: Colors.grey,
                                     ),
                                   ),
@@ -495,5 +540,9 @@ class _SenderManagementScreenState extends State<SenderManagementScreen> {
         ),
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
   }
 }
