@@ -92,13 +92,15 @@ class AuthService {
   }
 
   // دریافت اطلاعات کاربر با توکن
+  // auth_service.dart - اصلاح تابع getUserInformation
   static Future<UserInfoResponse> getUserInformation(String token) async {
     try {
       print('🔍 درخواست اطلاعات کاربر...');
       print('🔑 توکن: ${token.substring(0, 20)}...');
 
+      // تغییر از GET به POST
       final response = await http
-          .get(
+          .post(
             Uri.parse('$_baseUrl/getUserInformation'),
             headers: {
               'Content-Type': 'application/json',

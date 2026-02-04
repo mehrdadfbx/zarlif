@@ -331,28 +331,28 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     children: [
                       const Icon(Icons.info, color: Colors.blue, size: 20),
                       const SizedBox(width: 10),
-                      Expanded(
-                        child: Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(
-                                text:
-                                    'تکمیل پروفایل به شخصی‌سازی تجربه شما کمک می‌کند. ',
-                                style: TextStyle(color: Colors.blue[800]),
-                              ),
-                              if (!widget.isRequired)
-                                TextSpan(
-                                  text: '(اختیاری)',
-                                  style: TextStyle(
-                                    color: Colors.orange[800],
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ),
+                      // Expanded(
+                      //   child: Text.rich(
+                      //     // TextSpan(
+                      //     //   children: [
+                      //     //     TextSpan(
+                      //     //       text:
+                      //     //           'تکمیل پروفایل به شخصی‌سازی تجربه شما کمک می‌کند. ',
+                      //     //       style: TextStyle(color: Colors.blue[800]),
+                      //     //     ),
+                      //     //     if (!widget.isRequired)
+                      //     //       TextSpan(
+                      //     //         text: '(اختیاری)',
+                      //     //         style: TextStyle(
+                      //     //           color: Colors.orange[800],
+                      //     //           fontWeight: FontWeight.bold,
+                      //     //         ),
+                      //     //       ),
+                      //     //   ],
+                      //     // ),
+                      //     // style: const TextStyle(fontSize: 12),
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),

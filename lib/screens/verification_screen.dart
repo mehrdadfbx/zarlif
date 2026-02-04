@@ -1,3 +1,4 @@
+// verification_screen.dart - بخش اصلاح شده
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -106,14 +107,18 @@ class _VerificationScreenState extends State<VerificationScreen> {
             token: response.token!,
             phone: widget.phone,
           );
-          print('💾 توکن ذخیره شد');
+          print('💾 توکن ذخیره شد: ${response.token!.substring(0, 20)}...');
         }
 
         _showSnackBar(response.message, Colors.green);
 
-        Future.delayed(const Duration(milliseconds: 1000), () {
+        // ناوبری مستقیم به صفحه اصلی
+        WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            _navigateToHome();
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+            );
           }
         });
       } else {
@@ -171,15 +176,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
     }
   }
 
-  void _navigateToHome() {
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
-    }
-  }
-
   void _showSnackBar(String message, Color color) {
     if (!mounted) return;
 
@@ -233,159 +229,175 @@ class _VerificationScreenState extends State<VerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isSmallScreen = screenWidth < 400;
+    final double fieldSize = isSmallScreen ? 36 : 40;
+
     return Scaffold(
       backgroundColor: Colors.blue[50],
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Card(
-              elevation: 8,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // آیکون
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.blue[100],
-                        borderRadius: BorderRadius.circular(16),
+            padding: const EdgeInsets.all(16.0),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: screenWidth * 0.9),
+              child: Card(
+                elevation: 8,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // آیکون
+                      Container(
+                        width: isSmallScreen ? 70 : 80,
+                        height: isSmallScreen ? 70 : 80,
+                        decoration: BoxDecoration(
+                          color: Colors.blue[100],
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Icon(
+                          Icons.verified,
+                          size: isSmallScreen ? 40 : 50,
+                          color: Colors.blue,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.verified,
-                        size: 50,
-                        color: Colors.blue,
+
+                      const SizedBox(height: 16),
+
+                      // عنوان
+                      Text(
+                        'تأیید کد',
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 22 : 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 8),
 
-                    // عنوان
-                    const Text(
-                      'تأیید کد',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                      // توضیح
+                      Text(
+                        'کد ۶ رقمی به ${widget.phone} ارسال شد',
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 12 : 14,
+                          color: Colors.grey,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                    ),
 
-                    const SizedBox(height: 10),
+                      const SizedBox(height: 24),
 
-                    // توضیح
-                    Text(
-                      'کد ۶ رقمی به ${widget.phone} ارسال شد',
-                      style: const TextStyle(fontSize: 14, color: Colors.grey),
-                      textAlign: TextAlign.center,
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    // کدهای ۶ رقمی
-                    Directionality(
-                      textDirection: TextDirection.ltr,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: List.generate(6, (index) {
-                          return SizedBox(
-                            width: 45,
-                            child: TextField(
-                              controller: _controllers[index],
-                              focusNode: _focusNodes[index],
-                              keyboardType: TextInputType.number,
-                              textAlign: TextAlign.center,
-                              maxLength: 1,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              decoration: InputDecoration(
-                                counterText: '',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: Colors.blue,
-                                    width: 2,
+                      // کدهای ۶ رقمی - نسخه اصلاح شده
+                      Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: List.generate(6, (index) {
+                              return SizedBox(
+                                width: fieldSize,
+                                height: fieldSize + 20,
+                                child: TextField(
+                                  controller: _controllers[index],
+                                  focusNode: _focusNodes[index],
+                                  keyboardType: TextInputType.number,
+                                  textAlign: TextAlign.center,
+                                  maxLength: 1,
+                                  style: TextStyle(
+                                    fontSize: fieldSize * 0.6,
+                                    fontWeight: FontWeight.bold,
                                   ),
+                                  decoration: InputDecoration(
+                                    counterText: '',
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: const BorderSide(
+                                        color: Colors.blue,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                  onChanged: (value) =>
+                                      _handleTextChange(value, index),
                                 ),
-                              ),
-                              onChanged: (value) =>
-                                  _handleTextChange(value, index),
-                            ),
-                          );
-                        }),
-                      ),
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    // دکمه تأیید
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _verifyCode,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                              );
+                            }),
                           ),
                         ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 24,
-                                width: 24,
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // دکمه تأیید
+                      SizedBox(
+                        width: double.infinity,
+                        height: isSmallScreen ? 46 : 50,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _verifyCode,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: _isLoading
+                              ? SizedBox(
+                                  height: isSmallScreen ? 20 : 24,
+                                  width: isSmallScreen ? 20 : 24,
+                                  child: const CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 3,
+                                  ),
+                                )
+                              : Text(
+                                  'تأیید کد',
+                                  style: TextStyle(
+                                    fontSize: isSmallScreen ? 14 : 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // دکمه ارسال مجدد
+                      TextButton(
+                        onPressed: _canResend && !_isResending
+                            ? _resendCode
+                            : null,
+                        child: _isResending
+                            ? SizedBox(
+                                height: 18,
+                                width: 18,
                                 child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 3,
+                                  strokeWidth: 2,
+                                  color: Colors.blue,
                                 ),
                               )
-                            : const Text(
-                                'تأیید کد',
+                            : Text(
+                                _canResend
+                                    ? 'ارسال مجدد کد'
+                                    : 'ارسال مجدد ($_resendTimer ثانیه)',
                                 style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                                  fontSize: isSmallScreen ? 12 : 14,
+                                  color: _canResend ? Colors.blue : Colors.grey,
                                 ),
                               ),
                       ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // دکمه ارسال مجدد
-                    TextButton(
-                      onPressed: _canResend && !_isResending
-                          ? _resendCode
-                          : null,
-                      child: _isResending
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.blue,
-                              ),
-                            )
-                          : Text(
-                              _canResend
-                                  ? 'ارسال مجدد کد'
-                                  : 'ارسال مجدد ($_resendTimer ثانیه)',
-                              style: TextStyle(
-                                color: _canResend ? Colors.blue : Colors.grey,
-                              ),
-                            ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

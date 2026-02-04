@@ -1,80 +1,127 @@
+// models/sender_model.dart
 class Sender {
-  final int? id; // برای ویرایش و حذف
-  final DateTime addedDate;
-  final String senderName;
-  final String phoneNumber;
+  final int id;
+  final String name;
+  final String phone;
   final String address;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   Sender({
-    this.id,
-    required this.addedDate,
-    required this.senderName,
-    required this.phoneNumber,
+    required this.id,
+    required this.name,
+    required this.phone,
     required this.address,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
-  /// تبدیل به Map برای ارسال به API
+  factory Sender.fromJson(Map<String, dynamic> json) {
+    return Sender(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      phone: json['phone'] ?? '',
+      address: json['address'] ?? '',
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'name': name, 'phone': phone, 'address': address};
+  }
+
   Map<String, dynamic> toMap() {
     return {
-      if (id != null) 'id': id, // فقط اگر وجود داشت بفرست
-      'name': senderName,
-      'phone': phoneNumber,
+      'id': id,
+      'name': name,
+      'phone': phone,
       'address': address,
-      // addedDate رو نمی‌فرستیم — سرور خودش تنظیم می‌کنه
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
     };
-  }
-
-  /// ساخت شیء از پاسخ API
-  factory Sender.fromMap(Map<String, dynamic> map) {
-    int? parseId(dynamic value) {
-      if (value == null) return null;
-      if (value is int) return value;
-      if (value is String) return int.tryParse(value);
-      return null;
-    }
-
-    return Sender(
-      id: parseId(map['id']),
-      addedDate: DateTime.tryParse(
-            map['added_date']?.toString() ??
-                map['addedDate']?.toString() ??
-                DateTime.now().toIso8601String(),
-          ) ??
-          DateTime.now(),
-      senderName: (map['name'] ?? map['senderName'] ?? '').toString().trim(),
-      phoneNumber: (map['phone'] ?? map['phoneNumber'] ?? '').toString().trim(),
-      address: (map['address'] ?? '').toString().trim(),
-    );
-  }
-
-  /// کپی با امکان تغییر فیلدها
-  Sender copyWith({
-    int? id,
-    DateTime? addedDate,
-    String? senderName,
-    String? phoneNumber,
-    String? address,
-  }) {
-    return Sender(
-      id: id ?? this.id,
-      addedDate: addedDate ?? this.addedDate,
-      senderName: senderName ?? this.senderName,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
-      address: address ?? this.address,
-    );
   }
 
   @override
   String toString() {
-    return 'Sender(id: $id, name: $senderName, phone: $phoneNumber)';
+    return 'Sender(id: $id, name: $name, phone: $phone, address: $address)';
+  }
+}
+
+class GetSendersResponse {
+  final int statusCode;
+  final String status;
+  final String message;
+  final List<Sender> data;
+
+  GetSendersResponse({
+    required this.statusCode,
+    required this.status,
+    required this.message,
+    required this.data,
+  });
+
+  factory GetSendersResponse.fromJson(Map<String, dynamic> json) {
+    return GetSendersResponse(
+      statusCode: json['statusCode'] ?? 0,
+      status: json['status'] ?? '',
+      message: json['message'] ?? '',
+      data: json['data'] != null
+          ? (json['data'] as List).map((item) => Sender.fromJson(item)).toList()
+          : [],
+    );
   }
 
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is Sender && other.id == id;
+  bool get isSuccess => statusCode == 200;
+}
+
+class AddSenderResponse {
+  final int statusCode;
+  final String status;
+  final String message;
+  final Sender? data;
+
+  AddSenderResponse({
+    required this.statusCode,
+    required this.status,
+    required this.message,
+    required this.data,
+  });
+
+  factory AddSenderResponse.fromJson(Map<String, dynamic> json) {
+    return AddSenderResponse(
+      statusCode: json['statusCode'] ?? 0,
+      status: json['status'] ?? '',
+      message: json['message'] ?? '',
+      data: json['data'] != null ? Sender.fromJson(json['data']) : null,
+    );
   }
 
-  @override
-  int get hashCode => id.hashCode;
+  bool get isSuccess => statusCode == 200;
+}
+
+class DeleteSenderResponse {
+  final int statusCode;
+  final String status;
+  final String message;
+
+  DeleteSenderResponse({
+    required this.statusCode,
+    required this.status,
+    required this.message,
+  });
+
+  factory DeleteSenderResponse.fromJson(Map<String, dynamic> json) {
+    return DeleteSenderResponse(
+      statusCode: json['statusCode'] ?? 0,
+      status: json['status'] ?? '',
+      message: json['message'] ?? '',
+    );
+  }
+
+  bool get isSuccess => statusCode == 200;
 }

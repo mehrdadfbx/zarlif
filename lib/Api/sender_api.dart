@@ -1,114 +1,178 @@
+// api/sender_api.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/sender_model.dart';
-
-class ApiActions {
-  static const String addSender = "add_sender";
-  static const String getSenders = "get_senders";
-  static const String updateSender = "update_sender";
-  static const String deleteSender = "delete_sender";
-}
+import '../utils/storage_service.dart';
 
 class SenderApi {
-  static const String baseUrl = "https://moghzi.ir/server/zarlif/server.php";
+  static const String _baseUrl = 'https://www.balutapp.ir/zarlif/api';
 
-  static final Map<String, String> _jsonHeaders = {
-    'Content-Type': 'application/json; charset=UTF-8',
-  };
-
-  /// افزودن فرستنده
-  static Future<bool> addSender(Sender sender) async {
+  // دریافت لیست فرستنده‌ها
+  static Future<GetSendersResponse> getSenders() async {
     try {
-      final uri = Uri.parse('$baseUrl?action=${ApiActions.addSender}');
+      final token = await StorageService.getToken();
+      if (token == null) {
+        throw Exception('توکن یافت نشد. لطفاً مجدداً وارد شوید.');
+      }
+
+      print('📡 دریافت لیست فرستنده‌ها...');
+
       final response = await http
           .post(
-            uri,
-            headers: _jsonHeaders,
-            body: jsonEncode(sender.toMap()), // فقط داده‌ها (بدون action)
+            Uri.parse('$_baseUrl/getAllSenders'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': token,
+            },
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(const Duration(seconds: 30));
 
-      _log("افزودن", response);
+      print('📡 وضعیت: ${response.statusCode}');
+      print('📦 بدنه: ${response.body}');
 
-      if (response.statusCode != 200) return false;
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
-      return data["success"] == true;
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        return GetSendersResponse.fromJson(responseData);
+      } else {
+        throw Exception('خطا در ارتباط با سرور: ${response.statusCode}');
+      }
     } catch (e) {
-      _logError("افزودن: $e");
-      return false;
+      print('❌ خطا در getSenders: $e');
+      rethrow;
     }
   }
 
-  /// دریافت لیست
-  static Future<List<Sender>> getSenders() async {
+  // افزودن فرستنده جدید
+  static Future<AddSenderResponse> addSender({
+    required String name,
+    required String phone,
+    required String address,
+  }) async {
     try {
-      final uri = Uri.parse('$baseUrl?action=${ApiActions.getSenders}');
+      final token = await StorageService.getToken();
+      if (token == null) {
+        throw Exception('توکن یافت نشد. لطفاً مجدداً وارد شوید.');
+      }
+
+      print('📝 افزودن فرستنده جدید...');
+      print('   نام: $name');
+      print('   تلفن: $phone');
+      print('   آدرس: $address');
+
       final response = await http
           .post(
-            uri,
-            headers: _jsonHeaders,
-            body: jsonEncode({}), // body خالی
+            Uri.parse('$_baseUrl/addSender'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': token,
+            },
+            body: json.encode({
+              'name': name,
+              'phone': phone,
+              'address': address,
+            }),
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(const Duration(seconds: 30));
 
-      _log("دریافت لیست", response);
+      print('📡 وضعیت: ${response.statusCode}');
+      print('📦 بدنه: ${response.body}');
 
-      if (response.statusCode != 200) return [];
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
-
-      if (data["success"] != true || data["data"] == null) return [];
-
-      final List list = data["data"];
-      return list.map<Sender>((item) => Sender.fromMap(item)).toList();
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        return AddSenderResponse.fromJson(responseData);
+      } else {
+        throw Exception('خطا در ارتباط با سرور: ${response.statusCode}');
+      }
     } catch (e) {
-      _logError("دریافت: $e");
-      return [];
+      print('❌ خطا در addSender: $e');
+      rethrow;
     }
   }
 
-  /// ویرایش
-  static Future<bool> updateSender(Sender sender) async {
-    if (sender.id == null) return false;
+  // به‌روزرسانی فرستنده
+  static Future<AddSenderResponse> updateSender({
+    required int id,
+    required String name,
+    required String phone,
+    required String address,
+  }) async {
     try {
-      final uri = Uri.parse('$baseUrl?action=${ApiActions.updateSender}');
-      final response = await http
-          .post(uri, headers: _jsonHeaders, body: jsonEncode(sender.toMap()))
-          .timeout(const Duration(seconds: 15));
+      final token = await StorageService.getToken();
+      if (token == null) {
+        throw Exception('توکن یافت نشد. لطفاً مجدداً وارد شوید.');
+      }
 
-      _log("ویرایش", response);
-      if (response.statusCode != 200) return false;
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
-      return data["success"] == true;
+      print('✏️ به‌روزرسانی فرستنده...');
+      print('   ID: $id');
+      print('   نام: $name');
+      print('   تلفن: $phone');
+      print('   آدرس: $address');
+
+      final response = await http
+          .post(
+            Uri.parse('$_baseUrl/updateSender'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': token,
+            },
+            body: json.encode({
+              'id': id,
+              'name': name,
+              'phone': phone,
+              'address': address,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      print('📡 وضعیت: ${response.statusCode}');
+      print('📦 بدنه: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        return AddSenderResponse.fromJson(responseData);
+      } else {
+        throw Exception('خطا در ارتباط با سرور: ${response.statusCode}');
+      }
     } catch (e) {
-      _logError("ویرایش: $e");
-      return false;
+      print('❌ خطا در updateSender: $e');
+      rethrow;
     }
   }
 
-  /// حذف
-  static Future<bool> deleteSender(int id) async {
+  // حذف فرستنده
+  static Future<DeleteSenderResponse> deleteSender(int id) async {
     try {
-      final uri = Uri.parse('$baseUrl?action=${ApiActions.deleteSender}');
+      final token = await StorageService.getToken();
+      if (token == null) {
+        throw Exception('توکن یافت نشد. لطفاً مجدداً وارد شوید.');
+      }
+
+      print('🗑️ حذف فرستنده...');
+      print('   ID: $id');
+
       final response = await http
-          .post(uri, headers: _jsonHeaders, body: jsonEncode({"id": id}))
-          .timeout(const Duration(seconds: 15));
+          .post(
+            Uri.parse('$_baseUrl/deleteSender'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': token,
+            },
+            body: json.encode({'id': id}),
+          )
+          .timeout(const Duration(seconds: 30));
 
-      _log("حذف", response);
-      if (response.statusCode != 200) return false;
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
-      return data["success"] == true;
+      print('📡 وضعیت: ${response.statusCode}');
+      print('📦 بدنه: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        return DeleteSenderResponse.fromJson(responseData);
+      } else {
+        throw Exception('خطا در ارتباط با سرور: ${response.statusCode}');
+      }
     } catch (e) {
-      _logError("حذف: $e");
-      return false;
+      print('❌ خطا در deleteSender: $e');
+      rethrow;
     }
-  }
-
-  // --- Helper ---
-  static void _log(String action, http.Response r) {
-    print("$action - کد: ${r.statusCode} | پاسخ: ${r.body}");
-  }
-
-  static void _logError(String msg) {
-    print("خطای API: $msg");
   }
 }
