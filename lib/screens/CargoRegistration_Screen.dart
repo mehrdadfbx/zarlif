@@ -1,75 +1,12 @@
-// ignore_for_file: unused_element, use_build_context_synchronously
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
-
-// مدل‌های موقت تا زمانی که API واقعی آماده شود
-class Sender {
-  final int? id;
-  final String senderName;
-
-  Sender({this.id, required this.senderName});
-}
-
-class CargoModel {
-  final String receiveDate;
-  final int senderId;
-  final double weightScale;
-  final double humidity;
-  final int pricePerUnit;
-  final double pvc;
-  final double dirtyFlake;
-  final double polymer;
-  final double wasteMaterial;
-  final double coloredFlake;
-  final String colorChange;
-  final String userName;
-  final int testNumber;
-
-  CargoModel({
-    required this.receiveDate,
-    required this.senderId,
-    required this.weightScale,
-    required this.humidity,
-    required this.pricePerUnit,
-    required this.pvc,
-    required this.dirtyFlake,
-    required this.polymer,
-    required this.wasteMaterial,
-    required this.coloredFlake,
-    required this.colorChange,
-    required this.userName,
-    required this.testNumber,
-  });
-}
-
-// API موقت
-class SenderApi {
-  static Future<List<Sender>> getSenders() async {
-    // داده‌های نمونه تا زمانی که API واقعی آماده شود
-    await Future.delayed(const Duration(seconds: 1)); // شبیه‌سازی تاخیر شبکه
-    return [
-      Sender(id: 1, senderName: 'شرکت الف'),
-      Sender(id: 2, senderName: 'شرکت ب'),
-      Sender(id: 3, senderName: 'شرکت ج'),
-    ];
-  }
-}
-
-class CargoApi {
-  static Future<Map<String, dynamic>> addCargo(CargoModel cargo) async {
-    // شبیه‌سازی ارسال به API
-    await Future.delayed(const Duration(seconds: 2));
-
-    // در حالت واقعی، اینجا درخواست HTTP ارسال می‌شود
-    // فعلاً همیشه موفق برمی‌گردانیم
-    return {
-      "success": true,
-      "message": "بار با موفقیت ثبت شد",
-      "data": {"id": 123}, // ID نمونه
-    };
-  }
-}
+import 'package:zarlif/Api/CargoApi.dart';
+import 'package:zarlif/models/CargoModel.dart';
+import 'package:zarlif/screens/sender_screen.dart';
+import '../models/sender_model.dart';
+import '../api/sender_api.dart';
 
 class CargoRegistrationScreen extends StatefulWidget {
   const CargoRegistrationScreen({super.key});
@@ -84,225 +21,378 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
   final _formKey = GlobalKey<FormState>();
   late TabController _tabController;
 
-  // کنترلرها
+  // کنترلرها برای اطلاعات اصلی
+  final _plateNumberController = TextEditingController();
   final _weightController = TextEditingController();
-  final _moistureController = TextEditingController();
-  final _priceController = TextEditingController();
-  final _pvcController = TextEditingController();
-  final _dirtyFlakeController = TextEditingController();
-  final _polymerController = TextEditingController();
-  final _wasteController = TextEditingController();
-  final _coloredFlakeController = TextEditingController();
-  final _enteredByController = TextEditingController();
+  final _numberController = TextEditingController();
+  final _codeController = TextEditingController();
+  final _theoryController = TextEditingController();
+  final _responsibleController = TextEditingController();
 
-  // کنترلرها برای آزمایش‌های مختلف
-  final List<TextEditingController> _moistureControllers = [
-    TextEditingController(),
-    TextEditingController(),
-    TextEditingController(),
-  ];
-  final List<TextEditingController> _pvcControllers = [
-    TextEditingController(),
-    TextEditingController(),
-    TextEditingController(),
-  ];
-  final List<TextEditingController> _dirtyFlakeControllers = [
-    TextEditingController(),
-    TextEditingController(),
-    TextEditingController(),
-  ];
-  final List<TextEditingController> _polymerControllers = [
-    TextEditingController(),
-    TextEditingController(),
-    TextEditingController(),
-  ];
-  final List<TextEditingController> _wasteControllers = [
-    TextEditingController(),
-    TextEditingController(),
-    TextEditingController(),
-  ];
-  final List<TextEditingController> _coloredFlakeControllers = [
-    TextEditingController(),
-    TextEditingController(),
-    TextEditingController(),
-  ];
-
-  String? _selectedColorChange;
-  Jalali? _selectedJalaliDate;
-  String _displayDate = 'در حال بارگذاری...';
-  List<Sender> _senders = [];
+  // لیست فرستنده‌ها از API
+  List<Sender> _sendersList = [];
   Sender? _selectedSender;
-  bool _isLoadingSenders = true;
-  final List<double> _totalPpm = [0.0, 0.0, 0.0];
 
-  // متغیر برای نمایش پاپ‌آپ اطلاعات اصلی
-  bool _showBasicInfoPopup = false;
+  // مقادیر dropdown
+  String? _selectedQualityGrade;
+  String? _selectedResult;
+
+  // کنترلرها برای آزمایش‌ها (3 آزمایش)
+  final List<TextEditingController> _pvcControllers = List.generate(
+    3,
+    (_) => TextEditingController(),
+  );
+  final List<TextEditingController> _plasticizerControllers = List.generate(
+    3,
+    (_) => TextEditingController(),
+  );
+  final List<TextEditingController> _wasteMaterialControllers = List.generate(
+    3,
+    (_) => TextEditingController(),
+  );
+  final List<TextEditingController> _blackSaltColorControllers = List.generate(
+    3,
+    (_) => TextEditingController(),
+  );
+  final List<TextEditingController> _totalBlackSaltControllers = List.generate(
+    3,
+    (_) => TextEditingController(),
+  );
+  final List<TextEditingController> _moistureControllers = List.generate(
+    3,
+    (_) => TextEditingController(),
+  );
+  final List<TextEditingController> _wasteBlackSaltControllers = List.generate(
+    3,
+    (_) => TextEditingController(),
+  );
+  final List<TextEditingController> _mixedBlackSaltControllers = List.generate(
+    3,
+    (_) => TextEditingController(),
+  );
+  final List<TextEditingController> _colorChangeQuantitativeControllers =
+      List.generate(3, (_) => TextEditingController());
+  final List<TextEditingController> _cutSizemmControllers = List.generate(
+    3,
+    (_) => TextEditingController(),
+  );
+  final List<TextEditingController> _densityControllers = List.generate(
+    3,
+    (_) => TextEditingController(),
+  );
+
+  // dropdown‌های آزمایش‌ها
+  final List<String?> _selectedColorChangeQualitative = [null, null, null];
+  final List<String?> _selectedCutSizeQualitative = [null, null, null];
+
+  bool _showBasicInfoPopup = true;
+  bool _isSubmitting = false;
+
+  // مقادیر حد قابل قبول
+  final Map<String, dynamic> _acceptableLimits = {
+    'pvc': 200,
+    'plasticizer': 300,
+    'wasteMaterial': 300,
+    'blackSaltColor': 300,
+    'totalBlackSalt': 300,
+    'moisture': 2,
+    'wasteBlackSalt': 5000,
+    'mixedBlackSalt': 2,
+    'colorChangeQuantitative': 20,
+  };
+
+  // لیست گزینه‌های dropdown
+  final List<String> _qualityGradeOptions = ['A', 'B', 'C', 'D'];
+  final List<String> _resultOptions = [
+    'accepted',
+    'relativeAccepted',
+    'conditionalAccepted',
+    'rejected',
+  ];
+  final List<String> _colorChangeOptions = ['کم', 'متوسط', 'زیاد'];
+  final List<String> _cutSizeOptions = ['مناسب', 'نامناسب'];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _selectedJalaliDate = Jalali.now();
-    _displayDate = _formatJalali(_selectedJalaliDate!);
     _loadSenders();
-    _setupNumberFormatting();
-    _setupPpmListeners();
-
-    // نمایش پاپ‌آپ اطلاعات اصلی هنگام شروع
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        _showBasicInfoPopup = true;
-      });
-    });
   }
-
-  void _setupNumberFormatting() {
-    _priceController.addListener(() {
-      final text = _priceController.text.replaceAll(',', '');
-      if (text.isNotEmpty && RegExp(r'^\d+$').hasMatch(text)) {
-        final number = int.tryParse(text) ?? 0;
-        final formatted = _formatNumber(number);
-        if (_priceController.text != formatted) {
-          _priceController.value = TextEditingValue(
-            text: formatted,
-            selection: TextSelection.collapsed(offset: formatted.length),
-          );
-        }
-      }
-    });
-  }
-
-  void _setupPpmListeners() {
-    for (int i = 0; i < 3; i++) {
-      _setupControllerListeners(i);
-    }
-  }
-
-  void _setupControllerListeners(int tabIndex) {
-    final controllers = [
-      _pvcControllers[tabIndex],
-      _dirtyFlakeControllers[tabIndex],
-      _polymerControllers[tabIndex],
-      _wasteControllers[tabIndex],
-      _coloredFlakeControllers[tabIndex],
-    ];
-
-    for (var controller in controllers) {
-      controller.addListener(() => _calculateTotalPpm(tabIndex));
-    }
-  }
-
-  void _calculateTotalPpm(int tabIndex) {
-    final controllers = [
-      _pvcControllers[tabIndex],
-      _dirtyFlakeControllers[tabIndex],
-      _polymerControllers[tabIndex],
-      _wasteControllers[tabIndex],
-      _coloredFlakeControllers[tabIndex],
-    ];
-
-    double total = 0;
-    for (var controller in controllers) {
-      final value = double.tryParse(controller.text) ?? 0;
-      total += value;
-    }
-
-    setState(() {
-      _totalPpm[tabIndex] = total;
-    });
-  }
-
-  String _formatNumber(int number) {
-    final str = number.toString();
-    final buffer = StringBuffer();
-    for (int i = 0; i < str.length; i++) {
-      buffer.write(str[str.length - 1 - i]);
-      if ((i + 1) % 3 == 0 && i + 1 != str.length) buffer.write(',');
-    }
-    return buffer.toString().split('').reversed.join('');
-  }
-
-  int _parseFormattedNumber(String formatted) =>
-      int.tryParse(formatted.replaceAll(',', '')) ?? 0;
-
-  double _parseFormattedDouble(String formatted) =>
-      double.tryParse(formatted.replaceAll(',', '')) ?? 0.0;
-
-  String _formatJalali(Jalali date) =>
-      '${date.year}/${_twoDigits(date.month)}/${_twoDigits(date.day)}';
-
-  String _twoDigits(int n) => n.toString().padLeft(2, '0');
 
   Future<void> _loadSenders() async {
-    setState(() => _isLoadingSenders = true);
     try {
-      final senders = await SenderApi.getSenders();
-      setState(() {
-        _senders = senders;
-        if (senders.isNotEmpty && _selectedSender == null) {
-          _selectedSender = senders.first;
-        }
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطا در بارگذاری فرستندگان: $e'),
-            backgroundColor: Colors.red,
-          ),
+      final response = await SenderApi.getSenders();
+      if (response.isSuccess) {
+        setState(() {
+          _sendersList = response.data;
+          if (_sendersList.isNotEmpty && _selectedSender == null) {
+            _selectedSender = _sendersList.first;
+          }
+        });
+      } else {
+        _showSnackBar(
+          'خطا در بارگذاری فرستندگان: ${response.message}',
+          isError: true,
         );
       }
-    } finally {
-      setState(() => _isLoadingSenders = false);
-    }
+    } catch (e) {
+      _showSnackBar('خطا در بارگذاری فرستندگان: $e', isError: true);
+    } finally {}
   }
 
-  Future<void> _selectJalaliDate(BuildContext context) async {
-    final picked = await showPersianDatePicker(
-      context: context,
-      initialDate: _selectedJalaliDate ?? Jalali.now(),
-      firstDate: Jalali(1395, 1, 1),
-      lastDate: Jalali(1410, 12, 29),
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        duration: const Duration(seconds: 3),
+      ),
     );
-    if (picked != null) {
-      setState(() {
-        _selectedJalaliDate = picked;
-        _displayDate = _formatJalali(picked);
-      });
-    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    for (var c in [
+    for (var controller in [
+      _plateNumberController,
       _weightController,
-      _moistureController,
-      _priceController,
-      _pvcController,
-      _dirtyFlakeController,
-      _polymerController,
-      _wasteController,
-      _coloredFlakeController,
-      _enteredByController,
+      _numberController,
+      _codeController,
+      _theoryController,
+      _responsibleController,
+      ..._pvcControllers,
+      ..._plasticizerControllers,
+      ..._wasteMaterialControllers,
+      ..._blackSaltColorControllers,
+      ..._totalBlackSaltControllers,
+      ..._moistureControllers,
+      ..._wasteBlackSaltControllers,
+      ..._mixedBlackSaltControllers,
+      ..._colorChangeQuantitativeControllers,
+      ..._cutSizemmControllers,
+      ..._densityControllers,
     ]) {
-      c.dispose();
-    }
-
-    // Dispose all tab controllers
-    for (var controllers in [
-      _moistureControllers,
-      _pvcControllers,
-      _dirtyFlakeControllers,
-      _polymerControllers,
-      _wasteControllers,
-      _coloredFlakeControllers,
-    ]) {
-      for (var controller in controllers) {
-        controller.dispose();
-      }
+      controller.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _submitAllExperiments() async {
+    if (!_validateBasicInfo()) {
+      setState(() => _showBasicInfoPopup = true);
+      return;
+    }
+
+    for (int i = 0; i < 3; i++) {
+      if (_pvcControllers[i].text.isEmpty ||
+          _plasticizerControllers[i].text.isEmpty ||
+          _wasteMaterialControllers[i].text.isEmpty ||
+          _blackSaltColorControllers[i].text.isEmpty ||
+          _totalBlackSaltControllers[i].text.isEmpty ||
+          _moistureControllers[i].text.isEmpty ||
+          _wasteBlackSaltControllers[i].text.isEmpty ||
+          _mixedBlackSaltControllers[i].text.isEmpty ||
+          _selectedColorChangeQualitative[i] == null ||
+          _colorChangeQuantitativeControllers[i].text.isEmpty ||
+          _selectedCutSizeQualitative[i] == null ||
+          _cutSizemmControllers[i].text.isEmpty ||
+          _densityControllers[i].text.isEmpty) {
+        _showSnackBar(
+          'لطفاً تمام فیلدهای آزمایش ${i + 1} را پر کنید',
+          isError: true,
+        );
+        _tabController.animateTo(i);
+        return;
+      }
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final receiptInfo = ReceiptInformation(
+        sender: _selectedSender?.name ?? '',
+        plateNumber: _plateNumberController.text,
+        weight: double.parse(_weightController.text),
+        number: _numberController.text,
+        code: _codeController.text,
+        qualityGrade: _selectedQualityGrade ?? 'A',
+        result: _selectedResult ?? 'accepted',
+        theory: _theoryController.text,
+        responsible: _responsibleController.text,
+      );
+
+      final List<Experiment> experiments = [];
+      for (int i = 0; i < 3; i++) {
+        experiments.add(
+          Experiment(
+            row: 'تست ${i + 1}',
+            pvc: double.parse(_pvcControllers[i].text),
+            plasticizer: double.parse(_plasticizerControllers[i].text),
+            wasteMaterial: double.parse(_wasteMaterialControllers[i].text),
+            blackSaltColor: double.parse(_blackSaltColorControllers[i].text),
+            totalBlackSalt: double.parse(_totalBlackSaltControllers[i].text),
+            moisture: double.parse(_moistureControllers[i].text),
+            wasteBlackSalt: double.parse(_wasteBlackSaltControllers[i].text),
+            mixedBlackSalt: double.parse(_mixedBlackSaltControllers[i].text),
+            colorChangeQualitative: _getColorChangeEnglishValue(
+              _selectedColorChangeQualitative[i]!,
+            ),
+            colorChangeQuantitative: double.parse(
+              _colorChangeQuantitativeControllers[i].text,
+            ),
+            cutSizeQualitative: _getCutSizeEnglishValue(
+              _selectedCutSizeQualitative[i]!,
+            ),
+            cutSizemm: double.parse(_cutSizemmControllers[i].text),
+            density: double.parse(_densityControllers[i].text),
+          ),
+        );
+      }
+
+      final request = SaveExperimentRequest(
+        receiptInformation: receiptInfo,
+        experiments: experiments,
+      );
+
+      print('📦 داده‌های ارسالی:');
+      print(json.encode(request.toJson()));
+
+      final response = await CargoApi.saveExperiment(request);
+
+      if (response.isSuccess) {
+        _showSnackBar(response.message);
+        _clearForm();
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      } else {
+        _showSnackBar('خطا: ${response.message}', isError: true);
+      }
+    } on FormatException catch (e) {
+      _showSnackBar(
+        'لطفاً مقادیر عددی را به درستی وارد کنید. خطا: $e',
+        isError: true,
+      );
+    } catch (e) {
+      _showSnackBar('خطا در ارسال اطلاعات: $e', isError: true);
+      print('❌ خطای کامل: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  String _getColorChangeEnglishValue(String persianValue) {
+    switch (persianValue) {
+      case 'کم':
+        return 'low';
+      case 'متوسط':
+        return 'medium';
+      case 'زیاد':
+        return 'high';
+      default:
+        return 'low';
+    }
+  }
+
+  String _getCutSizeEnglishValue(String persianValue) {
+    switch (persianValue) {
+      case 'مناسب':
+        return 'suitable';
+      case 'نامناسب':
+        return 'unsuitable';
+      default:
+        return 'suitable';
+    }
+  }
+
+  String _getResultPersianName(String value) {
+    switch (value) {
+      case 'accepted':
+        return 'قبول';
+      case 'relativeAccepted':
+        return 'قبول نسبی';
+      case 'conditionalAccepted':
+        return 'قبول مشروط';
+      case 'rejected':
+        return 'مردود';
+      default:
+        return 'نامشخص';
+    }
+  }
+
+  bool _validateBasicInfo() {
+    if (_selectedSender == null ||
+        _plateNumberController.text.isEmpty ||
+        _numberController.text.isEmpty ||
+        _codeController.text.isEmpty ||
+        _weightController.text.isEmpty ||
+        _selectedQualityGrade == null ||
+        _selectedResult == null ||
+        _theoryController.text.isEmpty ||
+        _responsibleController.text.isEmpty) {
+      _showSnackBar('لطفاً تمام اطلاعات اصلی را وارد کنید', isError: true);
+      return false;
+    }
+    return true;
+  }
+
+  void _clearForm() {
+    _plateNumberController.clear();
+    _weightController.clear();
+    _numberController.clear();
+    _codeController.clear();
+    _theoryController.clear();
+    _responsibleController.clear();
+
+    for (var controller in [
+      ..._pvcControllers,
+      ..._plasticizerControllers,
+      ..._wasteMaterialControllers,
+      ..._blackSaltColorControllers,
+      ..._totalBlackSaltControllers,
+      ..._moistureControllers,
+      ..._wasteBlackSaltControllers,
+      ..._mixedBlackSaltControllers,
+      ..._colorChangeQuantitativeControllers,
+      ..._cutSizemmControllers,
+      ..._densityControllers,
+    ]) {
+      controller.clear();
+    }
+
+    setState(() {
+      _selectedQualityGrade = null;
+      _selectedResult = null;
+      for (int i = 0; i < 3; i++) {
+        _selectedColorChangeQualitative[i] = null;
+        _selectedCutSizeQualitative[i] = null;
+      }
+    });
+  }
+
+  Future<void> _navigateToSenderManagementScreen() async {
+    final result = await Navigator.push<Sender?>(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            const SenderManagementScreen(isSelectionMode: true),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _selectedSender = result;
+      });
+
+      if (!_sendersList.any((sender) => sender.id == result.id)) {
+        setState(() {
+          _sendersList.add(result);
+        });
+      }
+    }
   }
 
   @override
@@ -311,7 +401,6 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
     final screenWidth = mediaQuery.size.width;
     final screenHeight = mediaQuery.size.height;
 
-    // محاسبه اندازه‌ها بر اساس درصد
     final horizontalPadding = screenWidth * 0.04;
     final verticalPadding = screenHeight * 0.02;
     final fieldSpacing = screenHeight * 0.015;
@@ -340,16 +429,6 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   child: Column(
                     children: [
-                      // نمایش تاریخ در بالای فرم
-                      _buildDateSection(
-                        cardPadding,
-                        fontSizeMedium,
-                        fontSizeSmall,
-                        iconSize,
-                      ),
-                      SizedBox(height: fieldSpacing * 1.5),
-
-                      // تب‌بار
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.grey[100],
@@ -368,9 +447,9 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
                             ),
                           ),
                           tabs: const [
-                            Tab(text: 'آزمایش یک'),
-                            Tab(text: 'آزمایش دو'),
-                            Tab(text: 'آزمایش سه'),
+                            Tab(text: 'تست اول'),
+                            Tab(text: 'تست دوم'),
+                            Tab(text: 'تست سوم'),
                           ],
                         ),
                       ),
@@ -381,30 +460,9 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
                         child: TabBarView(
                           controller: _tabController,
                           children: [
-                            _buildTestTab(
-                              0,
-                              screenWidth,
-                              cardPadding,
-                              fontSizeSmall,
-                              fieldSpacing,
-                              fontSizeMedium,
-                            ),
-                            _buildTestTab(
-                              1,
-                              screenWidth,
-                              cardPadding,
-                              fontSizeSmall,
-                              fieldSpacing,
-                              fontSizeMedium,
-                            ),
-                            _buildTestTab(
-                              2,
-                              screenWidth,
-                              cardPadding,
-                              fontSizeSmall,
-                              fieldSpacing,
-                              fontSizeMedium,
-                            ),
+                            _buildTestTab(0, fontSizeSmall, fieldSpacing),
+                            _buildTestTab(1, fontSizeSmall, fieldSpacing),
+                            _buildTestTab(2, fontSizeSmall, fieldSpacing),
                           ],
                         ),
                       ),
@@ -417,7 +475,6 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
               ),
             ),
 
-            // پاپ‌آپ اطلاعات اصلی
             if (_showBasicInfoPopup)
               _buildBasicInfoPopup(
                 screenWidth,
@@ -427,98 +484,18 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
                 cardPadding,
                 fieldSpacing,
               ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  // ویجت برای نمایش تاریخ در بالای فرم
-  Widget _buildDateSection(
-    double cardPadding,
-    double fontSizeMedium,
-    double fontSizeSmall,
-    double iconSize,
-  ) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(cardPadding),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(cardPadding),
-        child: Row(
-          children: [
-            Icon(Icons.calendar_today, color: Colors.blue, size: iconSize),
-            SizedBox(width: cardPadding),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'تاریخ دریافت بار',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: fontSizeMedium,
-                    fontFamily: 'Vazir',
-                  ),
-                ),
-                SizedBox(height: cardPadding * 0.3),
-                InkWell(
-                  onTap: () => _selectJalaliDate(context),
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: cardPadding,
-                      vertical: cardPadding * 0.5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(cardPadding * 0.5),
-                      border: Border.all(color: Colors.blue[200]!),
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          _displayDate,
-                          style: TextStyle(
-                            fontSize: fontSizeSmall,
-                            fontFamily: 'Vazir',
-                            color: Colors.blue[800],
-                          ),
-                        ),
-                        SizedBox(width: cardPadding * 0.5),
-                        Icon(
-                          Icons.edit_calendar,
-                          color: Colors.blue[700],
-                          size: fontSizeSmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const Spacer(),
-            // دکمه برای نمایش مجدد پاپ‌آپ اطلاعات اصلی
-            IconButton(
-              onPressed: () {
-                setState(() {
-                  _showBasicInfoPopup = true;
-                });
-              },
-              icon: Icon(
-                Icons.info_outline,
-                color: Colors.blue,
-                size: iconSize,
+            if (_isSubmitting)
+              Container(
+                color: Colors.black54,
+                child: const Center(child: CircularProgressIndicator()),
               ),
-              tooltip: 'مشاهده اطلاعات اصلی',
-            ),
           ],
         ),
       ),
     );
   }
 
-  // ویجت پاپ‌آپ اطلاعات اصلی
   Widget _buildBasicInfoPopup(
     double screenWidth,
     double screenHeight,
@@ -532,7 +509,7 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
       child: Center(
         child: Container(
           width: screenWidth * 0.9,
-          height: screenHeight * 0.6,
+          height: screenHeight * 0.85,
           padding: EdgeInsets.all(cardPadding * 1.5),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -548,7 +525,6 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // هدر پاپ‌آپ
               Row(
                 children: [
                   Icon(
@@ -567,11 +543,8 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
                   ),
                   const Spacer(),
                   IconButton(
-                    onPressed: () {
-                      setState(() {
-                        _showBasicInfoPopup = false;
-                      });
-                    },
+                    onPressed: () =>
+                        setState(() => _showBasicInfoPopup = false),
                     icon: Icon(
                       Icons.close,
                       color: Colors.grey,
@@ -583,26 +556,58 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
 
               SizedBox(height: fieldSpacing),
 
-              // محتوای پاپ‌آپ
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
                       _buildSenderDropdown(fontSizeSmall),
                       SizedBox(height: fieldSpacing),
-                      _buildNumberField(
-                        'وزن (kg)',
-                        _weightController,
-                        TextInputType.numberWithOptions(decimal: true),
-                        isDecimal: true,
+
+                      _buildTextField(
+                        'شماره پلاک',
+                        _plateNumberController,
                         fontSizeSmall: fontSizeSmall,
                       ),
                       SizedBox(height: fieldSpacing),
+
+                      _buildTextField(
+                        'شماره فاکتور',
+                        _numberController,
+                        fontSizeSmall: fontSizeSmall,
+                      ),
+                      SizedBox(height: fieldSpacing),
+
+                      _buildTextField(
+                        'کد',
+                        _codeController,
+                        fontSizeSmall: fontSizeSmall,
+                      ),
+                      SizedBox(height: fieldSpacing),
+
                       _buildNumberField(
-                        'قیمت (ریال)',
-                        _priceController,
-                        TextInputType.number,
-                        formatNumber: true,
+                        'وزن (کیلوگرم)',
+                        _weightController,
+                        TextInputType.numberWithOptions(decimal: true),
+                        fontSizeSmall: fontSizeSmall,
+                      ),
+                      SizedBox(height: fieldSpacing),
+
+                      _buildQualityGradeDropdown(fontSizeSmall),
+                      SizedBox(height: fieldSpacing),
+
+                      _buildResultDropdown(fontSizeSmall),
+                      SizedBox(height: fieldSpacing),
+
+                      _buildTextField(
+                        'نظر مدیر کارخانه',
+                        _theoryController,
+                        fontSizeSmall: fontSizeSmall,
+                      ),
+                      SizedBox(height: fieldSpacing),
+
+                      _buildTextField(
+                        'مسئول آزمایشگاه',
+                        _responsibleController,
                         fontSizeSmall: fontSizeSmall,
                       ),
                     ],
@@ -612,24 +617,12 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
 
               SizedBox(height: fieldSpacing),
 
-              // دکمه تایید
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    if (_selectedSender != null &&
-                        _weightController.text.isNotEmpty &&
-                        _priceController.text.isNotEmpty) {
-                      setState(() {
-                        _showBasicInfoPopup = false;
-                      });
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('لطفاً تمام اطلاعات اصلی را وارد کنید'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
+                    if (_validateBasicInfo()) {
+                      setState(() => _showBasicInfoPopup = false);
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -659,96 +652,134 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
     );
   }
 
-  // ویجت برای هر تب آزمایش
   Widget _buildTestTab(
     int tabIndex,
-    double screenWidth,
-    double cardPadding,
     double fontSizeSmall,
     double fieldSpacing,
-    double fontSizeMedium,
   ) {
     return SingleChildScrollView(
       child: Column(
         children: [
-          // نمایش خلاصه اطلاعات اصلی (فقط خواندنی)
-          _buildBasicInfoSummary(screenWidth, cardPadding, fontSizeSmall),
+          _buildBasicInfoSummary(fontSizeSmall, fieldSpacing),
           SizedBox(height: fieldSpacing),
 
-          // فیلدهای آزمایش
-          _buildPercentField(
-            'رطوبت (%)',
-            _moistureControllers[tabIndex],
-            fontSizeSmall: fontSizeSmall,
-          ),
-          SizedBox(height: fieldSpacing),
-          _buildPpmField(
+          // PVC
+          _buildNumberFieldWithLimit(
             'PVC (ppm)',
             _pvcControllers[tabIndex],
+            _acceptableLimits['pvc'],
             fontSizeSmall: fontSizeSmall,
           ),
           SizedBox(height: fieldSpacing),
-          _buildPpmField(
-            'پرک کثیف (ppm)',
-            _dirtyFlakeControllers[tabIndex],
+
+          // Plasticizer
+          _buildNumberFieldWithLimit(
+            'نرم‌کننده (ppm)',
+            _plasticizerControllers[tabIndex],
+            _acceptableLimits['plasticizer'],
             fontSizeSmall: fontSizeSmall,
           ),
           SizedBox(height: fieldSpacing),
-          _buildPpmField(
-            'پلیمر (ppm)',
-            _polymerControllers[tabIndex],
-            fontSizeSmall: fontSizeSmall,
-          ),
-          SizedBox(height: fieldSpacing),
-          _buildPpmField(
+
+          // Waste Material
+          _buildNumberFieldWithLimit(
             'مواد زائد (ppm)',
-            _wasteControllers[tabIndex],
-            fontSizeSmall: fontSizeSmall,
-          ),
-          SizedBox(height: fieldSpacing),
-          _buildPpmField(
-            'پرک رنگی (ppm)',
-            _coloredFlakeControllers[tabIndex],
+            _wasteMaterialControllers[tabIndex],
+            _acceptableLimits['wasteMaterial'],
             fontSizeSmall: fontSizeSmall,
           ),
           SizedBox(height: fieldSpacing),
 
-          // نمایش مجموع ppm برای این آزمایش
-          _buildTotalPpmIndicator(
-            fontSizeSmall,
-            fontSizeMedium,
-            _totalPpm[tabIndex],
-            tabIndex,
+          // Black Salt Color
+          _buildNumberFieldWithLimit(
+            ' پرک رنگی  (ppm)',
+            _blackSaltColorControllers[tabIndex],
+            _acceptableLimits['blackSaltColor'],
+            fontSizeSmall: fontSizeSmall,
           ),
           SizedBox(height: fieldSpacing),
 
-          // فیلدهای مشترک
-          _buildColorChangeDropdown(fontSizeSmall),
-          SizedBox(height: fieldSpacing),
-          _buildField(
-            'وارد کننده اطلاعات',
-            _enteredByController,
-            TextInputType.text,
+          // Total Black Salt
+          _buildNumberFieldWithLimit(
+            ' جمع ناخالصی(ppm)',
+            _totalBlackSaltControllers[tabIndex],
+            _acceptableLimits['totalBlackSalt'],
             fontSizeSmall: fontSizeSmall,
           ),
+          SizedBox(height: fieldSpacing),
+
+          // Moisture
+          _buildNumberFieldWithLimit(
+            'رطوبت (%)',
+            _moistureControllers[tabIndex],
+            _acceptableLimits['moisture'],
+            fontSizeSmall: fontSizeSmall,
+          ),
+          SizedBox(height: fieldSpacing),
+
+          // Waste Black Salt
+          _buildNumberFieldWithLimit(
+            'مواد زائد(ppm)',
+            _wasteBlackSaltControllers[tabIndex],
+            _acceptableLimits['wasteBlackSalt'],
+            fontSizeSmall: fontSizeSmall,
+          ),
+          SizedBox(height: fieldSpacing),
+
+          // Mixed Black Salt
+          _buildNumberFieldWithLimit(
+            ' پلیمر متفرقه(%)',
+            _mixedBlackSaltControllers[tabIndex],
+            _acceptableLimits['mixedBlackSalt'],
+            fontSizeSmall: fontSizeSmall,
+          ),
+          SizedBox(height: fieldSpacing),
+
+          // تغییر رنگ (کیفی)
+          _buildColorChangeDropdown(tabIndex, fontSizeSmall),
+          SizedBox(height: fieldSpacing),
+
+          // Color Change (Quantitative)
+          _buildNumberFieldWithLimit(
+            'تغییر رنگ (%)',
+            _colorChangeQuantitativeControllers[tabIndex],
+            _acceptableLimits['colorChangeQuantitative'],
+            fontSizeSmall: fontSizeSmall,
+          ),
+          SizedBox(height: fieldSpacing),
+
+          // اندازه برش (کیفی)
+          _buildCutSizeDropdown(tabIndex, fontSizeSmall),
+          SizedBox(height: fieldSpacing),
+
+          // Cut Size (mm)
+          _buildNumberField(
+            'اندازه برش (میلی‌متر)',
+            _cutSizemmControllers[tabIndex],
+            TextInputType.numberWithOptions(decimal: true),
+            fontSizeSmall: fontSizeSmall,
+          ),
+          SizedBox(height: fieldSpacing),
+
+          // Density
+          _buildNumberField(
+            'چگالی',
+            _densityControllers[tabIndex],
+            TextInputType.numberWithOptions(decimal: true),
+            fontSizeSmall: fontSizeSmall,
+          ),
+          SizedBox(height: fieldSpacing * 2),
         ],
       ),
     );
   }
 
-  // ویجت برای نمایش خلاصه اطلاعات اصلی
-  Widget _buildBasicInfoSummary(
-    double screenWidth,
-    double cardPadding,
-    double fontSizeSmall,
-  ) {
+  Widget _buildBasicInfoSummary(double fontSizeSmall, double fieldSpacing) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(screenWidth * 0.02),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: EdgeInsets.all(cardPadding),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -759,7 +790,7 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
                   color: Colors.green,
                   size: fontSizeSmall * 1.2,
                 ),
-                SizedBox(width: cardPadding * 0.5),
+                SizedBox(width: 8),
                 Text(
                   'خلاصه اطلاعات اصلی',
                   style: TextStyle(
@@ -771,50 +802,59 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
                 ),
                 const Spacer(),
                 IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _showBasicInfoPopup = true;
-                    });
-                  },
+                  onPressed: () => setState(() => _showBasicInfoPopup = true),
                   icon: Icon(
                     Icons.edit,
                     color: Colors.blue,
                     size: fontSizeSmall,
                   ),
-                  padding: EdgeInsets.zero,
-                  constraints: BoxConstraints(),
-                  iconSize: fontSizeSmall * 1.2,
+                  padding: EdgeInsets.all(16),
+                  constraints: const BoxConstraints(),
                 ),
               ],
             ),
-            SizedBox(height: cardPadding * 0.5),
+            SizedBox(height: 8),
             if (_selectedSender != null)
-              Text(
-                'فرستنده: ${_selectedSender!.senderName}',
-                style: TextStyle(
-                  fontSize: fontSizeSmall * 0.9,
-                  fontFamily: 'Vazir',
-                ),
+              _buildSummaryRow(
+                'فرستنده:',
+                _selectedSender!.name,
+                fontSizeSmall,
               ),
+            if (_plateNumberController.text.isNotEmpty)
+              _buildSummaryRow(
+                'شماره پلاک:',
+                _plateNumberController.text,
+                fontSizeSmall,
+              ),
+            if (_numberController.text.isNotEmpty)
+              _buildSummaryRow(
+                'شماره فاکتور:',
+                _numberController.text,
+                fontSizeSmall,
+              ),
+            if (_codeController.text.isNotEmpty)
+              _buildSummaryRow('کد:', _codeController.text, fontSizeSmall),
             if (_weightController.text.isNotEmpty)
-              Text(
-                'وزن: ${_weightController.text} kg',
-                style: TextStyle(
-                  fontSize: fontSizeSmall * 0.9,
-                  fontFamily: 'Vazir',
-                ),
+              _buildSummaryRow(
+                'وزن:',
+                '${_weightController.text} کیلوگرم',
+                fontSizeSmall,
               ),
-            if (_priceController.text.isNotEmpty)
-              Text(
-                'قیمت: ${_priceController.text} ریال',
-                style: TextStyle(
-                  fontSize: fontSizeSmall * 0.9,
-                  fontFamily: 'Vazir',
-                ),
+            if (_selectedQualityGrade != null)
+              _buildSummaryRow(
+                'درجه کیفی:',
+                _selectedQualityGrade!,
+                fontSizeSmall,
+              ),
+            if (_selectedResult != null)
+              _buildSummaryRow(
+                'نتیجه:',
+                _getResultPersianName(_selectedResult!),
+                fontSizeSmall,
               ),
             if (_selectedSender == null &&
-                _weightController.text.isEmpty &&
-                _priceController.text.isEmpty)
+                _plateNumberController.text.isEmpty &&
+                _weightController.text.isEmpty)
               Text(
                 'اطلاعات اصلی وارد نشده است',
                 style: TextStyle(
@@ -829,64 +869,30 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
     );
   }
 
-  // ویجت برای نمایش مجموع ppm
-  Widget _buildTotalPpmIndicator(
-    double fontSizeSmall,
-    double fontSizeMedium,
-    double totalPpm,
-    int tabIndex,
-  ) {
-    Color color;
-    IconData icon;
-    String status;
-
-    if (totalPpm == 0) {
-      color = Colors.grey;
-      icon = Icons.info_outline;
-      status = 'مقادیر ppm وارد نشده‌اند';
-    } else if (totalPpm > 1000000) {
-      color = Colors.orange;
-      icon = Icons.warning_amber_outlined;
-      status = 'مجموع ppm بالا است';
-    } else {
-      color = Colors.blue;
-      icon = Icons.check_circle_outline;
-      status = 'مجموع ppm قابل قبول است';
-    }
-
-    return Container(
-      padding: EdgeInsets.all(fontSizeMedium),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(fontSizeMedium),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
+  Widget _buildSummaryRow(String label, String value, double fontSizeSmall) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: fontSizeMedium * 1.5),
-          SizedBox(width: fontSizeMedium),
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: fontSizeSmall * 0.9,
+                fontFamily: 'Vazir',
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'آزمایش ${tabIndex + 1} - مجموع ppm: ${_formatNumber(totalPpm.toInt())}',
-                  style: TextStyle(
-                    fontFamily: 'Vazir',
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                    fontSize: fontSizeMedium,
-                  ),
-                ),
-                Text(
-                  status,
-                  style: TextStyle(
-                    fontFamily: 'Vazir',
-                    fontSize: fontSizeSmall,
-                    color: color,
-                  ),
-                ),
-              ],
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: fontSizeSmall * 0.9,
+                fontFamily: 'Vazir',
+              ),
             ),
           ),
         ],
@@ -894,199 +900,412 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
     );
   }
 
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller, {
+    double fontSizeSmall = 14,
+  }) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 14,
+        ),
+      ),
+      style: TextStyle(fontSize: fontSizeSmall, fontFamily: 'Vazir'),
+      validator: (v) => (v?.isEmpty ?? true) ? 'این فیلد الزامی است' : null,
+    );
+  }
+
   Widget _buildNumberField(
     String label,
     TextEditingController controller,
-    TextInputType type, {
-    bool isDecimal = false,
-    bool formatNumber = false,
+    TextInputType keyboardType, {
     double fontSizeSmall = 14,
   }) {
     return TextFormField(
       controller: controller,
-      keyboardType: type,
-      inputFormatters: formatNumber
-          ? [FilteringTextInputFormatter.digitsOnly]
-          : [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+      keyboardType: keyboardType,
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+      ],
       decoration: InputDecoration(
         labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(fontSizeSmall * 2),
-        ),
-        suffixText: formatNumber ? 'ریال' : null,
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: fontSizeSmall,
-          vertical: fontSizeSmall * 1.2,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 14,
         ),
       ),
       style: TextStyle(fontSize: fontSizeSmall, fontFamily: 'Vazir'),
-      validator: (v) => (v?.isEmpty ?? true) ? 'الزامی' : null,
-    );
-  }
-
-  Widget _buildPercentField(
-    String label,
-    TextEditingController controller, {
-    double fontSizeSmall = 14,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(fontSizeSmall * 2),
-        ),
-        suffixText: '%',
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: fontSizeSmall,
-          vertical: fontSizeSmall * 1.2,
-        ),
-      ),
-      style: TextStyle(fontSize: fontSizeSmall, fontFamily: 'Vazir'),
-      onChanged: (value) {
-        if (_formKey.currentState != null) {
-          _formKey.currentState!.validate();
-        }
-      },
       validator: (v) {
-        if (v?.isEmpty ?? true) return 'الزامی';
-        final number = double.tryParse(v!);
-        if (number == null) return 'عدد معتبر وارد کنید';
-        if (number < 0) return 'درصد نمی‌تواند منفی باشد';
-        if (number > 100) return 'درصد نمی‌تواند بیشتر از ۱۰۰ باشد';
+        if (v?.isEmpty ?? true) return 'این فیلد الزامی است';
+        final num = double.tryParse(v!);
+        if (num == null) return 'عدد معتبر وارد کنید';
         return null;
       },
     );
   }
 
-  Widget _buildPpmField(
-    String label,
-    TextEditingController controller, {
-    double fontSizeSmall = 14,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(fontSizeSmall * 2),
-        ),
-        suffixText: 'ppm',
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: fontSizeSmall,
-          vertical: fontSizeSmall * 1.2,
-        ),
-      ),
-      style: TextStyle(fontSize: fontSizeSmall, fontFamily: 'Vazir'),
-      onChanged: (value) {
-        if (_formKey.currentState != null) {
-          _formKey.currentState!.validate();
-        }
-      },
-      validator: (v) {
-        if (v?.isEmpty ?? true) return 'الزامی';
-        final number = double.tryParse(v!);
-        if (number == null) return 'عدد معتبر وارد کنید';
-        if (number < 0) return 'مقدار نمی‌تواند منفی باشد';
-        return null;
-      },
-    );
-  }
-
-  Widget _buildField(
+  Widget _buildNumberFieldWithLimit(
     String label,
     TextEditingController controller,
-    TextInputType text, {
+    dynamic limit, {
     double fontSizeSmall = 14,
   }) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(fontSizeSmall * 2),
+    final unit = label.contains('%') ? '%' : 'ppm';
+    final limitText = 'حد قابل قبول: $limit$unit';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: controller,
+          keyboardType: TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+          ],
+          decoration: InputDecoration(
+            labelText: label,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 14,
+            ),
+            suffixIcon: controller.text.isNotEmpty
+                ? _buildValueIndicator(controller.text, limit, label)
+                : null,
+          ),
+          style: TextStyle(fontSize: fontSizeSmall, fontFamily: 'Vazir'),
+          validator: (v) {
+            if (v?.isEmpty ?? true) return 'این فیلد الزامی است';
+            final num = double.tryParse(v!);
+            if (num == null) return 'عدد معتبر وارد کنید';
+            return null;
+          },
+          onChanged: (value) {
+            setState(() {});
+          },
         ),
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: fontSizeSmall,
-          vertical: fontSizeSmall * 1.2,
+        Padding(
+          padding: const EdgeInsets.only(top: 4, right: 8),
+          child: Text(
+            limitText,
+            style: TextStyle(
+              fontSize: fontSizeSmall * 0.8,
+              fontFamily: 'Vazir',
+              color: Colors.grey[600],
+            ),
+          ),
         ),
+      ],
+    );
+  }
+
+  Widget? _buildValueIndicator(String value, dynamic limit, String label) {
+    final doubleValue = double.tryParse(value);
+    if (doubleValue == null) return null;
+
+    Color color;
+    String tooltip;
+
+    if (label.contains('%')) {
+      color = doubleValue > limit ? Colors.red : Colors.green;
+      tooltip = doubleValue > limit ? 'بیشتر از حد مجاز' : 'قابل قبول';
+    } else {
+      color = doubleValue > limit ? Colors.red : Colors.green;
+      tooltip = doubleValue > limit ? 'بیشتر از حد مجاز' : 'قابل قبول';
+    }
+
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        margin: const EdgeInsets.all(8),
+        width: 20,
+        height: 20,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        child: const Icon(Icons.circle, size: 20, color: Colors.white),
       ),
-      style: TextStyle(fontSize: fontSizeSmall, fontFamily: 'Vazir'),
-      onChanged: (value) {
-        if (_formKey.currentState != null) {
-          _formKey.currentState!.validate();
-        }
-      },
-      validator: (v) {
-        if (v?.isEmpty ?? true) return 'الزامی';
-        return null;
-      },
     );
   }
 
   Widget _buildSenderDropdown(double fontSizeSmall) {
-    return _isLoadingSenders
-        ? const LinearProgressIndicator()
-        : _senders.isEmpty
-        ? Text(
-            'هیچ فرستنده‌ای ثبت نشده',
-            style: TextStyle(color: Colors.grey, fontSize: fontSizeSmall),
-          )
-        : DropdownButtonFormField<Sender>(
-            value: _selectedSender,
-            decoration: InputDecoration(
-              labelText: 'فرستنده',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(fontSizeSmall * 2),
-              ),
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: fontSizeSmall,
-                vertical: fontSizeSmall * 1.2,
-              ),
-            ),
-            items: _senders
-                .map(
-                  (sender) => DropdownMenuItem(
-                    value: sender,
-                    child: Text(
-                      sender.senderName,
-                      style: TextStyle(fontSize: fontSizeSmall),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'فرستنده',
+          style: TextStyle(
+            fontSize: fontSizeSmall,
+            fontFamily: 'Vazir',
+            fontWeight: FontWeight.bold,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey[400]!),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: DropdownButton<Sender>(
+                    value: _selectedSender,
+                    isExpanded: true,
+                    underline: const SizedBox(),
+                    hint: Text(
+                      'فرستنده را انتخاب کنید',
+                      style: TextStyle(
+                        fontSize: fontSizeSmall,
+                        fontFamily: 'Vazir',
+                      ),
                     ),
+                    items: [
+                      if (_selectedSender != null)
+                        DropdownMenuItem(
+                          value: null,
+                          child: Text(
+                            'بدون انتخاب',
+                            style: TextStyle(
+                              fontSize: fontSizeSmall,
+                              fontFamily: 'Vazir',
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                      ..._sendersList.map((sender) {
+                        return DropdownMenuItem(
+                          value: sender,
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: fontSizeSmall * 0.7,
+                                backgroundColor: Colors.blue[100],
+                                child: Text(
+                                  sender.name.substring(0, 1).toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: fontSizeSmall * 0.8,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      sender.name,
+                                      style: TextStyle(
+                                        fontSize: fontSizeSmall,
+                                        fontFamily: 'Vazir',
+                                      ),
+                                    ),
+                                    Text(
+                                      sender.phone,
+                                      style: TextStyle(
+                                        fontSize: fontSizeSmall * 0.9,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      DropdownMenuItem<Sender>(
+                        value: Sender(
+                          id: -1,
+                          name: 'افزودن فرستنده جدید',
+                          phone: '',
+                          address: '',
+                          createdAt: DateTime.now(),
+                          updatedAt: DateTime.now(),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.add_circle,
+                              color: Colors.green,
+                              size: fontSizeSmall * 1.2,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'افزودن فرستنده جدید',
+                              style: TextStyle(
+                                fontSize: fontSizeSmall,
+                                fontFamily: 'Vazir',
+                                color: Colors.green,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    onChanged: (sender) async {
+                      if (sender != null && sender.id == -1) {
+                        await _navigateToSenderManagementScreen();
+                      } else {
+                        setState(() {
+                          _selectedSender = sender;
+                        });
+                      }
+                    },
                   ),
-                )
-                .toList(),
-            onChanged: (Sender? newValue) =>
-                setState(() => _selectedSender = newValue),
-            validator: (value) =>
-                value == null ? 'فرستنده را انتخاب کنید' : null,
-          );
+                ),
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () async {
+                    final result = await Navigator.push<Sender?>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const SenderManagementScreen(isSelectionMode: true),
+                      ),
+                    );
+
+                    if (result != null && mounted) {
+                      setState(() {
+                        _selectedSender = result;
+                      });
+                    }
+                  },
+                  tooltip: 'جستجوی فرستنده',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
-  Widget _buildColorChangeDropdown(double fontSizeSmall) {
+  Widget _buildQualityGradeDropdown(double fontSizeSmall) {
     return DropdownButtonFormField<String>(
-      value: _selectedColorChange,
+      value: _selectedQualityGrade,
       decoration: InputDecoration(
-        labelText: 'تغییر رنگ',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(fontSizeSmall * 2),
-        ),
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: fontSizeSmall,
-          vertical: fontSizeSmall * 1.2,
+        labelText: 'درجه کیفی',
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 14,
         ),
       ),
-      items: ['A', 'B', 'C', 'D']
+      items: _qualityGradeOptions
           .map(
-            (e) => DropdownMenuItem(
-              value: e,
-              child: Text(e, style: TextStyle(fontSize: fontSizeSmall)),
+            (grade) => DropdownMenuItem(
+              value: grade,
+              child: Text(
+                grade,
+                style: TextStyle(fontSize: fontSizeSmall, fontFamily: 'Vazir'),
+              ),
             ),
           )
           .toList(),
-      onChanged: (v) => setState(() => _selectedColorChange = v),
-      validator: (v) => v == null ? 'انتخاب کنید' : null,
+      onChanged: (value) => setState(() => _selectedQualityGrade = value),
+      validator: (value) => value == null ? 'درجه کیفی را انتخاب کنید' : null,
+    );
+  }
+
+  Widget _buildResultDropdown(double fontSizeSmall) {
+    return DropdownButtonFormField<String>(
+      value: _selectedResult,
+      decoration: InputDecoration(
+        labelText: 'نتیجه بازرسی',
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 14,
+        ),
+      ),
+      items: _resultOptions
+          .map(
+            (result) => DropdownMenuItem(
+              value: result,
+              child: Text(
+                _getResultPersianName(result),
+                style: TextStyle(fontSize: fontSizeSmall, fontFamily: 'Vazir'),
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: (value) => setState(() => _selectedResult = value),
+      validator: (value) => value == null ? 'نتیجه را انتخاب کنید' : null,
+    );
+  }
+
+  Widget _buildColorChangeDropdown(int tabIndex, double fontSizeSmall) {
+    return DropdownButtonFormField<String>(
+      value: _selectedColorChangeQualitative[tabIndex],
+      decoration: InputDecoration(
+        labelText: 'تغییر رنگ (کیفی)',
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 14,
+        ),
+        helperText: 'حد قابل قبول: کم',
+        helperStyle: TextStyle(
+          fontSize: fontSizeSmall * 0.8,
+          color: Colors.grey[600],
+        ),
+      ),
+      items: _colorChangeOptions
+          .map(
+            (e) => DropdownMenuItem(
+              value: e,
+              child: Text(
+                e,
+                style: TextStyle(fontSize: fontSizeSmall, fontFamily: 'Vazir'),
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: (value) =>
+          setState(() => _selectedColorChangeQualitative[tabIndex] = value),
+      validator: (value) => value == null ? 'انتخاب کنید' : null,
+    );
+  }
+
+  Widget _buildCutSizeDropdown(int tabIndex, double fontSizeSmall) {
+    return DropdownButtonFormField<String>(
+      value: _selectedCutSizeQualitative[tabIndex],
+      decoration: InputDecoration(
+        labelText: 'اندازه برش (کیفی)',
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 14,
+        ),
+        helperText: 'حد قابل قبول: مناسب',
+        helperStyle: TextStyle(
+          fontSize: fontSizeSmall * 0.8,
+          color: Colors.grey[600],
+        ),
+      ),
+      items: _cutSizeOptions
+          .map(
+            (e) => DropdownMenuItem(
+              value: e,
+              child: Text(
+                e,
+                style: TextStyle(fontSize: fontSizeSmall, fontFamily: 'Vazir'),
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: (value) =>
+          setState(() => _selectedCutSizeQualitative[tabIndex] = value),
+      validator: (value) => value == null ? 'انتخاب کنید' : null,
     );
   }
 
@@ -1111,7 +1330,7 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
           elevation: 0,
           centerTitle: true,
           title: Text(
-            'ثبت بار',
+            'ثبت آزمایش پرک',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -1151,138 +1370,60 @@ class _CargoRegistrationScreenState extends State<CargoRegistrationScreen>
     ),
   );
 
-  Widget _buildActionButtons(
-    double buttonSpacing,
-    double fontSizeMedium,
-  ) => Row(
-    children: [
-      Expanded(
-        child: ElevatedButton(
-          onPressed: () async {
-            // بررسی اطلاعات اصلی
-            if (_selectedSender == null ||
-                _weightController.text.isEmpty ||
-                _priceController.text.isEmpty) {
-              setState(() {
-                _showBasicInfoPopup = true;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('لطفاً ابتدا اطلاعات اصلی را تکمیل کنید'),
-                  backgroundColor: Colors.orange,
-                ),
-              );
-              return;
-            }
-
-            if (!_formKey.currentState!.validate()) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('لطفا خطاهای فرم را برطرف کنید'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-
-            final gregorian = _selectedJalaliDate!.toDateTime();
-            final isoDate =
-                '${gregorian.year}-${_twoDigits(gregorian.month)}-${_twoDigits(gregorian.day)}';
-
-            // ارسال داده‌های هر سه آزمایش
-            for (int i = 0; i < 3; i++) {
-              final cargo = CargoModel(
-                receiveDate: isoDate,
-                senderId: _selectedSender!.id ?? 0,
-                weightScale: _parseFormattedDouble(_weightController.text),
-                humidity: _parseFormattedDouble(_moistureControllers[i].text),
-                pricePerUnit: _parseFormattedNumber(_priceController.text),
-                pvc: _parseFormattedDouble(_pvcControllers[i].text),
-                dirtyFlake: _parseFormattedDouble(
-                  _dirtyFlakeControllers[i].text,
-                ),
-                polymer: _parseFormattedDouble(_polymerControllers[i].text),
-                wasteMaterial: _parseFormattedDouble(_wasteControllers[i].text),
-                coloredFlake: _parseFormattedDouble(
-                  _coloredFlakeControllers[i].text,
-                ),
-                colorChange: _selectedColorChange!,
-                userName: _enteredByController.text.trim(),
-                testNumber: i + 1, // شماره آزمایش
-              );
-
-              final messenger = ScaffoldMessenger.of(context);
-              messenger.showSnackBar(
-                SnackBar(
-                  content: Text('در حال ثبت آزمایش ${i + 1}...'),
-                  backgroundColor: Colors.blue,
-                ),
-              );
-
-              final result = await CargoApi.addCargo(cargo);
-              messenger.hideCurrentSnackBar();
-
-              if (!result["success"]) {
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'خطا در ثبت آزمایش ${i + 1}: ${result["message"]}',
-                    ),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-            }
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('تمامی آزمایش‌ها با موفقیت ثبت شدند'),
+  Widget _buildActionButtons(double buttonSpacing, double fontSizeMedium) =>
+      Row(
+        children: [
+          Expanded(
+            child: ElevatedButton(
+              onPressed: _isSubmitting ? null : _submitAllExperiments,
+              style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
+                padding: EdgeInsets.symmetric(vertical: fontSizeMedium * 1.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(fontSizeMedium),
+                ),
               ),
-            );
-
-            if (mounted) Navigator.pop(context);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            padding: EdgeInsets.symmetric(vertical: fontSizeMedium * 1.2),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(fontSizeMedium),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Text(
+                      'ثبت نهایی تمام آزمایش‌ها',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontFamily: 'Vazir',
+                        fontSize: fontSizeMedium,
+                      ),
+                    ),
             ),
           ),
-          child: Text(
-            'ثبت نهایی تمام آزمایش‌ها',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              fontFamily: 'Vazir',
-              fontSize: fontSizeMedium,
+          SizedBox(width: buttonSpacing),
+          Expanded(
+            child: OutlinedButton(
+              onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+              style: OutlinedButton.styleFrom(
+                padding: EdgeInsets.symmetric(vertical: fontSizeMedium * 1.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(fontSizeMedium),
+                ),
+                side: const BorderSide(color: Colors.grey),
+              ),
+              child: Text(
+                'انصراف',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontFamily: 'Vazir',
+                  fontSize: fontSizeMedium,
+                ),
+              ),
             ),
           ),
-        ),
-      ),
-      SizedBox(width: buttonSpacing),
-      Expanded(
-        child: OutlinedButton(
-          onPressed: () => Navigator.pop(context),
-          style: OutlinedButton.styleFrom(
-            padding: EdgeInsets.symmetric(vertical: fontSizeMedium * 1.2),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(fontSizeMedium),
-            ),
-            side: const BorderSide(color: Colors.grey),
-          ),
-          child: Text(
-            'انصراف',
-            style: TextStyle(
-              color: Colors.grey,
-              fontFamily: 'Vazir',
-              fontSize: fontSizeMedium,
-            ),
-          ),
-        ),
-      ),
-    ],
-  );
+        ],
+      );
 }

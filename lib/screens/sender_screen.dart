@@ -6,7 +6,13 @@ import '../models/sender_model.dart';
 import '../api/sender_api.dart' hide SenderApi;
 
 class SenderManagementScreen extends StatefulWidget {
-  const SenderManagementScreen({super.key});
+  final Function(Sender)? onSenderSelected;
+  final bool isSelectionMode;
+  const SenderManagementScreen({
+    super.key,
+    this.onSenderSelected,
+    required this.isSelectionMode,
+  });
 
   @override
   State<SenderManagementScreen> createState() => _SenderManagementScreenState();

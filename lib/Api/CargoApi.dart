@@ -1,76 +1,113 @@
-// Api/cargo_api.dart
-// ignore_for_file: unused_element, avoid_print
-
+// api/cargo_api.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/cargomodel.dart';
+import 'package:zarlif/utils/storage_service.dart';
+import '../models/CargoModel.dart';
 
 class CargoApi {
-  static const String _baseUrl = "https://moghzi.ir/server/zarlif/server.php";
-  static const Duration _timeout = Duration(seconds: 20);
+  static const String _baseUrl = 'https://www.balutapp.ir/zarlif/api';
+  static const String _saveExperimentEndpoint = '/saveExperiment';
 
-  // هدرهای ثابت درخواست‌ها
-  static final Map<String, String> _headers = {
-    'Content-Type': 'application/json; charset=UTF-8',
-  };
+  // متد برای ساخت هدرها
+  static Future<Map<String, String>> _getHeaders() async {
+    final token = await StorageService.getToken();
+    return {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Accept': 'application/json',
+      'Authorization': ?token,
+    };
+  }
 
-  // ================================
-  // 🚀 ثبت بار در سرور
-  // ================================
-  static Future<Map<String, dynamic>> addCargo(CargoModel cargo) async {
-    final uri = Uri.parse('$_baseUrl?action=add_cargo');
-
+  // متد ذخیره آزمایش
+  static Future<SaveExperimentResponse> saveExperiment(
+    SaveExperimentRequest request,
+  ) async {
     try {
-      final response = await http
-          .post(uri, headers: _headers, body: jsonEncode(cargo.toJson()))
-          .timeout(_timeout);
+      final url = Uri.parse('$_baseUrl$_saveExperimentEndpoint');
 
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      print('📤 ارسال درخواست به: $url');
+      print('📦 بدنه درخواست: ${request.toJsonString()}');
 
-      return {
-        "success": data["success"] == true,
-        "message": data["message"] ?? "ثبت موفق",
-      };
+      final response = await http.post(
+        url,
+        headers: await _getHeaders(),
+        body: request.toJsonString(),
+      );
+
+      print('📥 وضعیت پاسخ: ${response.statusCode}');
+      print('📄 بدنه پاسخ: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        try {
+          final Map<String, dynamic> responseData = json.decode(response.body);
+
+          return SaveExperimentResponse(
+            statusCode: response.statusCode,
+            status: responseData['status'] ?? 'success',
+            message: responseData['message'] ?? 'آزمایش با موفقیت ذخیره شد',
+            data: responseData['data'],
+            success: true,
+          );
+        } catch (e) {
+          // اگر JSON نامعتبر است
+          return SaveExperimentResponse(
+            statusCode: response.statusCode,
+            status: 'success',
+            message: 'آزمایش با موفقیت ذخیره شد',
+            data: response.body,
+            success: true,
+          );
+        }
+      } else {
+        // خطای سرور
+        try {
+          final responseData = json.decode(response.body);
+          return SaveExperimentResponse(
+            statusCode: response.statusCode,
+            status: 'error',
+            message:
+                responseData['message'] ??
+                'خطا در ارتباط با سرور: ${response.statusCode}',
+            data: responseData,
+            success: false,
+          );
+        } catch (e) {
+          return SaveExperimentResponse(
+            statusCode: response.statusCode,
+            status: 'error',
+            message: 'خطا در ارتباط با سرور: ${response.statusCode}',
+            data: null,
+            success: false,
+          );
+        }
+      }
     } catch (e) {
-      return {"success": false, "message": "خطا: $e"};
+      // خطای شبکه یا دیگر خطاها
+      print('❌ خطا در ذخیره آزمایش: $e');
+      return SaveExperimentResponse(
+        statusCode: 0,
+        status: 'error',
+        message: 'خطا در ارتباط با سرور: $e',
+        data: null,
+        success: false,
+      );
     }
   }
+}
 
-  // ================================
-  // 🚀 دریافت لیست تمام بارها
-  // ================================
-  static Future<List<CargoModel>> getAllCargos() async {
-    final uri = Uri.parse("$_baseUrl?action=get_cargos");
+// کلاس مدیریت خطاهای API
+class ApiException implements Exception {
+  final String message;
+  final int? statusCode;
+  final String? errorType;
 
-    try {
-      final response = await http.get(uri).timeout(const Duration(seconds: 15));
+  ApiException(this.message, {this.statusCode, this.errorType});
 
-      if (response.statusCode != 200) {
-        throw Exception("خطای سرور: ${response.statusCode}");
-      }
-
-      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-
-      if (decoded["success"] != true) {
-        throw Exception("خطا در دریافت داده: ${decoded['message']}");
-      }
-
-      final List list = decoded["data"] ?? [];
-
-      // تبدیل تمام آیتم‌ها به مدل
-      return list.map((item) => CargoModel.fromJson(item)).toList();
-    } catch (e) {
-      print("خطا در getAllCargos: $e");
-      return [];
+  @override
+  String toString() {
+    if (statusCode != null) {
+      return 'ApiException [$errorType]: $message (Status: $statusCode)';
     }
-  }
-
-  // --- توابع کمکی برای لاگ
-  static void _log(String action, http.Response r) {
-    print("$action - کد: ${r.statusCode} | پاسخ: ${r.body}");
-  }
-
-  static void _logError(String msg) {
-    print("خطای API: $msg");
+    return 'ApiException [$errorType]: $message';
   }
 }

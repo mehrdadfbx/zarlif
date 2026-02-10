@@ -92,7 +92,7 @@ class _SplashScreenState extends State<SplashScreen>
     _controller.forward();
 
     // انتقال به صفحه اصلی پس از 3 ثانیه
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
         Navigator.pushReplacement(
           context,

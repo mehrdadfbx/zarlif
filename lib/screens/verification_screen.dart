@@ -1,12 +1,9 @@
-// verification_screen.dart - بخش اصلاح شده
-// ignore_for_file: avoid_print
-
-import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../models/verify_code_response.dart';
-import '../Api/auth_service.dart';
-import '../utils/storage_service.dart';
+import 'package:zarlif/Api/auth_service.dart';
+import 'package:zarlif/models/verify_code_response.dart';
+// import 'package:zarlif/services/auth_service.dart';
+import 'package:zarlif/utils/storage_service.dart';
 import 'home_screen.dart';
 
 class VerificationScreen extends StatefulWidget {
@@ -37,7 +34,11 @@ class _VerificationScreenState extends State<VerificationScreen> {
     _setupFocusListeners();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _focusNodes[0].requestFocus();
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          _focusNodes[0].requestFocus();
+        }
+      });
     });
   }
 
@@ -46,7 +47,11 @@ class _VerificationScreenState extends State<VerificationScreen> {
       _focusNodes[i].addListener(() {
         if (!_focusNodes[i].hasFocus && _controllers[i].text.isEmpty) {
           if (i > 0) {
-            _focusNodes[i - 1].requestFocus();
+            Future.delayed(const Duration(milliseconds: 10), () {
+              if (mounted) {
+                _focusNodes[i - 1].requestFocus();
+              }
+            });
           }
         }
       });
@@ -76,8 +81,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
   Future<void> _verifyCode() async {
     String code = _controllers.map((controller) => controller.text).join();
 
-    print('🧩 کد وارد شده: $code');
-
     if (code.length != 6) {
       _showSnackBar('لطفاً کد ۶ رقمی را کامل وارد کنید', Colors.red);
       return;
@@ -94,32 +97,29 @@ class _VerificationScreenState extends State<VerificationScreen> {
         code,
       );
 
-      print('📊 پاسخ تأیید کد:');
-      print('   کد وضعیت: ${response.statusCode}');
-      print('   وضعیت: ${response.status}');
-      print('   پیام: ${response.message}');
-      print(
-        '   توکن: ${response.token != null ? "دارد (${response.token!.substring(0, 20)}...)" : "ندارد"}',
-      );
-
       if (response.isSuccess) {
-        // ذخیره توکن اگر وجود دارد
         if (response.token != null && response.token!.isNotEmpty) {
           await StorageService.saveAuthData(
             token: response.token!,
             phone: widget.phone,
           );
-          print('💾 توکن ذخیره شد: ${response.token!.substring(0, 20)}...');
         }
 
         _showSnackBar(response.message, Colors.green);
 
-        // ناوبری مستقیم به صفحه اصلی
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const HomeScreen()),
+              PageRouteBuilder(
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    const HomeScreen(),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(opacity: animation, child: child);
+                    },
+                transitionDuration: const Duration(milliseconds: 400),
+              ),
             );
           }
         });
@@ -128,8 +128,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
         _clearAllFields();
       }
     } catch (error) {
-      print('❌ خطا: $error');
-      _showSnackBar('خطا در تأیید کد: $error', Colors.red);
+      _showSnackBar('خطا در تأیید کد: ${error.toString()}', Colors.red);
       _clearAllFields();
     } finally {
       if (mounted) {
@@ -148,7 +147,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
     });
 
     try {
-      print('🔄 ارسال مجدد کد...');
       final response = await AuthService.requestCode(widget.phone);
 
       if (response.isSuccess) {
@@ -159,7 +157,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
         _showSnackBar(response.message, Colors.orange);
       }
     } catch (error) {
-      _showSnackBar('خطا در ارسال مجدد کد: $error', Colors.red);
+      _showSnackBar('خطا در ارسال مجدد کد: ${error.toString()}', Colors.red);
     } finally {
       if (mounted) {
         setState(() {
@@ -174,7 +172,9 @@ class _VerificationScreenState extends State<VerificationScreen> {
       controller.clear();
     }
     if (mounted) {
-      _focusNodes[0].requestFocus();
+      Future.delayed(const Duration(milliseconds: 10), () {
+        _focusNodes[0].requestFocus();
+      });
     }
   }
 
@@ -199,19 +199,25 @@ class _VerificationScreenState extends State<VerificationScreen> {
 
     if (value.isNotEmpty) {
       if (index < 5) {
-        Future.delayed(Duration.zero, () {
-          _focusNodes[index + 1].requestFocus();
+        Future.delayed(const Duration(milliseconds: 10), () {
+          if (mounted) {
+            _focusNodes[index + 1].requestFocus();
+          }
         });
       } else {
-        Future.delayed(Duration.zero, () {
-          _focusNodes[index].unfocus();
-          _verifyCode();
+        Future.delayed(const Duration(milliseconds: 50), () {
+          if (mounted) {
+            _focusNodes[index].unfocus();
+            _verifyCode();
+          }
         });
       }
     } else if (value.isEmpty) {
       if (index > 0) {
-        Future.delayed(Duration.zero, () {
-          _focusNodes[index - 1].requestFocus();
+        Future.delayed(const Duration(milliseconds: 10), () {
+          if (mounted) {
+            _focusNodes[index - 1].requestFocus();
+          }
         });
       }
     }
@@ -238,167 +244,167 @@ class _VerificationScreenState extends State<VerificationScreen> {
     return Scaffold(
       backgroundColor: Colors.blue[50],
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: screenWidth * 0.9),
-              child: Card(
-                elevation: 8,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // آیکون
-                      Container(
-                        width: isSmallScreen ? 70 : 80,
-                        height: isSmallScreen ? 70 : 80,
-                        decoration: BoxDecoration(
-                          color: Colors.blue[100],
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Icon(
-                          Icons.verified,
-                          size: isSmallScreen ? 40 : 50,
-                          color: Colors.blue,
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // عنوان
-                      Text(
-                        'تأیید کد',
-                        style: TextStyle(
-                          fontSize: isSmallScreen ? 22 : 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // توضیح
-                      Text(
-                        'کد ۶ رقمی به ${widget.phone} ارسال شد',
-                        style: TextStyle(
-                          fontSize: isSmallScreen ? 12 : 14,
-                          color: Colors.grey,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // کدهای ۶ رقمی - نسخه اصلاح شده
-                      Directionality(
-                        textDirection: TextDirection.ltr,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: List.generate(6, (index) {
-                              return SizedBox(
-                                width: fieldSize,
-                                height: fieldSize + 20,
-                                child: TextField(
-                                  controller: _controllers[index],
-                                  focusNode: _focusNodes[index],
-                                  keyboardType: TextInputType.number,
-                                  textAlign: TextAlign.center,
-                                  maxLength: 1,
-                                  style: TextStyle(
-                                    fontSize: fieldSize * 0.6,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  decoration: InputDecoration(
-                                    counterText: '',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                      borderSide: const BorderSide(
-                                        color: Colors.blue,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    contentPadding: EdgeInsets.zero,
-                                  ),
-                                  onChanged: (value) =>
-                                      _handleTextChange(value, index),
-                                ),
-                              );
-                            }),
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Center(
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              padding: const EdgeInsets.all(16.0),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: screenWidth * 0.9),
+                child: Card(
+                  elevation: 8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: isSmallScreen ? 70 : 80,
+                          height: isSmallScreen ? 70 : 80,
+                          decoration: BoxDecoration(
+                            color: Colors.blue[100],
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(
+                            Icons.verified,
+                            size: isSmallScreen ? 40 : 50,
+                            color: Colors.blue,
                           ),
                         ),
-                      ),
 
-                      const SizedBox(height: 24),
+                        const SizedBox(height: 16),
 
-                      // دکمه تأیید
-                      SizedBox(
-                        width: double.infinity,
-                        height: isSmallScreen ? 46 : 50,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _verifyCode,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        Text(
+                          'تأیید کد',
+                          style: TextStyle(
+                            fontSize: isSmallScreen ? 22 : 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        Text(
+                          'کد ۶ رقمی به ${widget.phone} ارسال شد',
+                          style: TextStyle(
+                            fontSize: isSmallScreen ? 12 : 14,
+                            color: Colors.grey,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: List.generate(6, (index) {
+                                return SizedBox(
+                                  width: fieldSize,
+                                  height: fieldSize + 20,
+                                  child: TextField(
+                                    controller: _controllers[index],
+                                    focusNode: _focusNodes[index],
+                                    keyboardType: TextInputType.number,
+                                    textAlign: TextAlign.center,
+                                    maxLength: 1,
+                                    style: TextStyle(
+                                      fontSize: fieldSize * 0.6,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    decoration: InputDecoration(
+                                      counterText: '',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: const BorderSide(
+                                          color: Colors.blue,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
+                                    onChanged: (value) =>
+                                        _handleTextChange(value, index),
+                                  ),
+                                );
+                              }),
                             ),
                           ),
-                          child: _isLoading
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        SizedBox(
+                          width: double.infinity,
+                          height: isSmallScreen ? 46 : 50,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _verifyCode,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: _isLoading
+                                ? SizedBox(
+                                    height: isSmallScreen ? 20 : 24,
+                                    width: isSmallScreen ? 20 : 24,
+                                    child: const CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 3,
+                                    ),
+                                  )
+                                : Text(
+                                    'تأیید کد',
+                                    style: TextStyle(
+                                      fontSize: isSmallScreen ? 14 : 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        TextButton(
+                          onPressed: _canResend && !_isResending
+                              ? _resendCode
+                              : null,
+                          child: _isResending
                               ? SizedBox(
-                                  height: isSmallScreen ? 20 : 24,
-                                  width: isSmallScreen ? 20 : 24,
-                                  child: const CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 3,
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.blue,
                                   ),
                                 )
                               : Text(
-                                  'تأیید کد',
+                                  _canResend
+                                      ? 'ارسال مجدد کد'
+                                      : 'ارسال مجدد ($_resendTimer ثانیه)',
                                   style: TextStyle(
-                                    fontSize: isSmallScreen ? 14 : 16,
-                                    fontWeight: FontWeight.bold,
+                                    fontSize: isSmallScreen ? 12 : 14,
+                                    color: _canResend
+                                        ? Colors.blue
+                                        : Colors.grey,
                                   ),
                                 ),
                         ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // دکمه ارسال مجدد
-                      TextButton(
-                        onPressed: _canResend && !_isResending
-                            ? _resendCode
-                            : null,
-                        child: _isResending
-                            ? SizedBox(
-                                height: 18,
-                                width: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.blue,
-                                ),
-                              )
-                            : Text(
-                                _canResend
-                                    ? 'ارسال مجدد کد'
-                                    : 'ارسال مجدد ($_resendTimer ثانیه)',
-                                style: TextStyle(
-                                  fontSize: isSmallScreen ? 12 : 14,
-                                  color: _canResend ? Colors.blue : Colors.grey,
-                                ),
-                              ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

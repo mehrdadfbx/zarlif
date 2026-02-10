@@ -2,7 +2,7 @@ name: zarlif
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -33,19 +33,19 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
-  intl: ^0.20.2
-  shamsi_date: ^1.1.1
-  flutter_launcher_icons: ^0.14.4
-  http: ^1.5.0
-  persian_datetime_picker: ^3.2.0
+  cupertino_icons: any
+  intl: any
+  shamsi_date: any
+  flutter_launcher_icons: any
+  http: any
+  persian_datetime_picker: any
   flutter_localizations:
     sdk: flutter
-  dropdown_search: ^6.0.2
-  fl_chart: ^1.1.1
-  syncfusion_flutter_charts: ^31.2.5
-  shared_preferences: ^2.5.3
-  provider: ^6.1.5+1
+  dropdown_search: any
+  fl_chart: any
+  syncfusion_flutter_charts: any
+  shared_preferences: any
+  provider: any
 #  flutter_native_splash: ^2.4.7
 
 dev_dependencies:
@@ -57,14 +57,13 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^6.0.0
+  flutter_lints: any
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
@@ -101,7 +100,6 @@ flutter:
     - assets/font/
     - assets/image/Logo.jpg
 
-
   fonts:
     - family: Vazir
       fonts:
@@ -110,16 +108,13 @@ flutter:
         - asset: assets/font/Vazirmatn-Bold.ttf
           weight: 700
 
-
 #flutter_native_splash:
-  #color: "#ffffff"  # رنگ پس‌زمینه
-  #image: assets/image/Logo.jpg  # مسیر لوگو
- # fill: false
-  #android: true
- # ios: true
- # web: false
-
-
+#color: "#ffffff"  # رنگ پس‌زمینه
+#image: assets/image/Logo.jpg  # مسیر لوگو
+# fill: false
+#android: true
+# ios: true
+# web: false
 
 flutter_launcher_icons:
   android: "launcher_icon"

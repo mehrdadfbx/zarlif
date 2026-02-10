@@ -164,11 +164,16 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                       textAlign: TextAlign.center,
                       validator: _validatePhone,
                       decoration: InputDecoration(
+                        hintStyle: const TextStyle(
+                          color: Color.fromARGB(240, 161, 161, 161),
+                        ),
                         hintText: '09123456789',
                         labelText: 'شماره موبایل',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.blue),
+                          borderSide: const BorderSide(
+                            color: Color.fromARGB(255, 39, 156, 252),
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),

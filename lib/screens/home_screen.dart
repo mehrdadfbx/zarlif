@@ -388,7 +388,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const SenderManagementScreen(),
+                builder: (context) => const SenderManagementScreen(isSelectionMode: false),
               ),
             );
           },
@@ -401,7 +401,8 @@ class _HomeScreenState extends State<HomeScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const LaboratoryReportScreen(),
+                builder: (BuildContext context) =>
+                    const LaboratoryReportScreen(),
               ),
             );
           },

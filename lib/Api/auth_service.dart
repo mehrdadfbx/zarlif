@@ -2,49 +2,67 @@
 // ignore_for_file: avoid_print
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:zarlif/models/auth_response.dart';
 import 'package:zarlif/models/verify_code_response.dart';
 import 'package:zarlif/models/user_info_response.dart';
 
+dynamic computeJsonDecode(Map<String, dynamic> args) {
+  final bodyBytes = args['bodyBytes'] as List<int>;
+  final decoded = utf8.decode(bodyBytes);
+  return jsonDecode(decoded);
+}
+
 class AuthService {
   static const String _baseUrl = 'https://www.balutapp.ir/zarlif/api';
 
-  // درخواست کد تأیید
   static Future<RequestCodeResponse> requestCode(String phone) async {
     try {
+      final headers = {
+        'Content-Type': 'application/json',
+        if (kDebugMode) 'User-Agent': 'FlutterApp/Debug',
+      };
+
       final response = await http
           .post(
             Uri.parse('$_baseUrl/register'),
-            headers: {'Content-Type': 'application/json'},
-            body: json.encode({'phone': phone}),
+            headers: headers,
+            body: jsonEncode({'phone': phone}),
           )
           .timeout(const Duration(seconds: 30));
 
-      final responseData = json.decode(response.body);
+      final responseData = await compute(computeJsonDecode, {
+        'bodyBytes': response.bodyBytes,
+      });
       return RequestCodeResponse.fromJson(responseData);
     } catch (e) {
       rethrow;
     }
   }
 
-  // تأیید کد شش رقمی
   static Future<VerifyCodeResponse> verifyCode(
     String phone,
     String code,
   ) async {
     try {
+      final headers = {
+        'Content-Type': 'application/json',
+        if (kDebugMode) 'User-Agent': 'FlutterApp/Debug',
+      };
+
       final response = await http
           .post(
             Uri.parse('$_baseUrl/checkVerifyCode'),
-            headers: {'Content-Type': 'application/json'},
-            body: json.encode({'phone': phone, 'code': code}),
+            headers: headers,
+            body: jsonEncode({'phone': phone, 'code': code}),
           )
           .timeout(const Duration(seconds: 30));
 
-      final responseData = json.decode(response.body);
+      final responseData = await compute(computeJsonDecode, {
+        'bodyBytes': response.bodyBytes,
+      });
 
-      // استخراج توکن از هدر
       String? token;
       if (response.headers.containsKey('authorization')) {
         token = response.headers['authorization'];
@@ -62,73 +80,46 @@ class AuthService {
     required String family,
   }) async {
     try {
-      print('✏️ به‌روزرسانی اطلاعات کاربر...');
-      print('   نام: $name');
-      print('   نام خانوادگی: $family');
-      print('   توکن: ${token.substring(0, 20)}...');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        if (kDebugMode) 'User-Agent': 'FlutterApp/Debug',
+      };
 
       final response = await http
           .post(
             Uri.parse('$_baseUrl/updateUserInformation'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': token,
-            },
-            body: json.encode({'name': name, 'family': family}),
+            headers: headers,
+            body: jsonEncode({'name': name, 'family': family}),
           )
           .timeout(const Duration(seconds: 30));
 
-      print('📡 وضعیت: ${response.statusCode}');
-      print('📦 بدنه: ${response.body}');
-      print('🔑 هدرها: ${response.headers}');
-
-      final responseData = json.decode(response.body);
-
+      final responseData = await compute(computeJsonDecode, {
+        'bodyBytes': response.bodyBytes,
+      });
       return UserInfoResponse.fromJson(responseData);
     } catch (e) {
-      print('❌ خطا در updateUserInformation: $e');
       rethrow;
     }
   }
 
-  // دریافت اطلاعات کاربر با توکن
-  // auth_service.dart - اصلاح تابع getUserInformation
   static Future<UserInfoResponse> getUserInformation(String token) async {
     try {
-      print('🔍 درخواست اطلاعات کاربر...');
-      print('🔑 توکن: ${token.substring(0, 20)}...');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        if (kDebugMode) 'User-Agent': 'FlutterApp/Debug',
+      };
 
-      // تغییر از GET به POST
       final response = await http
-          .post(
-            Uri.parse('$_baseUrl/getUserInformation'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': token,
-            },
-          )
+          .post(Uri.parse('$_baseUrl/getUserInformation'), headers: headers)
           .timeout(const Duration(seconds: 30));
 
-      print('📡 وضعیت: ${response.statusCode}');
-      print('📦 بدنه: ${response.body}');
-
-      final responseData = json.decode(response.body);
-
-      // لاگ جزئیات پاسخ
-      if (responseData['data'] != null) {
-        final data = responseData['data'];
-        print('👤 اطلاعات کاربر دریافت شد:');
-        print('   نام: ${data['name']}');
-        print('   فامیل: ${data['family']}');
-        print('   تلفن: ${data['phone']}');
-        print('   نقش: ${data['role']}');
-        print('   وضعیت فعال: ${data['activation']}');
-        print('   تأیید تلفن: ${data['phone_is_verify']}');
-      }
-
+      final responseData = await compute(computeJsonDecode, {
+        'bodyBytes': response.bodyBytes,
+      });
       return UserInfoResponse.fromJson(responseData);
     } catch (e) {
-      print('❌ خطا در getUserInformation: $e');
       rethrow;
     }
   }
